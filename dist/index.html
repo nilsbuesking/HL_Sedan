@@ -1,0 +1,2195 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>Wörth 1870</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#15191e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..800&family=IBM+Plex+Sans+Condensed:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: a lithographed field map fills the screen; a dark ink command strip sits above and below it (beside it in landscape). */
+:root {
+  color-scheme: dark;
+  --ink: #15191e;
+  --ink-2: #1f252c;
+  --ink-3: #323a44;
+  --scrim: rgba(17, 20, 25, 0.93);
+  --chalk: #ece6d6;
+  --chalk-2: #aea897;
+  --brass: #c9a35a;
+  --brass-ink: #1e1608;
+  --prussian: #2b3d5b;
+  --bavaria: #6a92c2;
+  --garance: #a7372b;
+  --tricolour-blue: #27408b;
+  --flag-black: #101010;
+  --flag-white: #f3f0e6;
+  --flag-red: #c4372d;
+  --good: #92b479;
+  --bad: #e06a52;
+  --f-display: "Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
+  --f-ui: "IBM Plex Sans Condensed", "Avenir Next Condensed", "Arial Narrow", system-ui, sans-serif;
+  --r: 10px;
+}
+html { height: 100%; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  height: 100%; margin: 0; overflow: hidden; background: var(--ink); color: var(--chalk);
+  font: 15px/1.4 var(--f-ui); overscroll-behavior: none;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+#app {
+  height: 100%; display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "bar" "stage" "sheet";
+}
+
+/* ---------- command strip: top */
+#bar {
+  grid-area: bar; display: flex; align-items: center; gap: 12px; min-height: 54px;
+  padding-block: 6px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--ink); border-bottom: 1px solid var(--ink-3);
+}
+.turn { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.turn-n { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--chalk-2); white-space: nowrap; }
+.turn-n b { color: var(--chalk); font-size: 15px; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.clock { font: italic 600 24px/1 var(--f-display); font-variant-numeric: lining-nums tabular-nums; letter-spacing: .01em; }
+.side {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px 0 8px;
+  border-radius: 16px; background: var(--ink-2); border: 1px solid var(--ink-3); font-weight: 600; font-size: 14px; white-space: nowrap;
+}
+.side small { font-weight: 500; color: var(--chalk-2); font-size: 12px; }
+.flag { width: 20px; height: 14px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+.flag.de { background: linear-gradient(var(--flag-black) 0 33.4%, var(--flag-white) 0 66.7%, var(--flag-red) 0); }
+.flag.fr { background: linear-gradient(90deg, var(--tricolour-blue) 0 33.4%, var(--flag-white) 0 66.7%, var(--flag-red) 0); }
+.icon-btn {
+  width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 12px;
+  background: transparent; border: 1px solid transparent; color: var(--chalk);
+}
+.icon-btn:active { background: var(--ink-2); }
+.icon-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; }
+
+/* ---------- map */
+#stage { grid-area: stage; position: relative; overflow: hidden; background: var(--ink); margin-left: env(safe-area-inset-left, 0px); }
+#map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+#toast {
+  position: absolute; top: 10px; left: 50%; transform: translate(-50%, -8px); max-width: calc(100% - 32px);
+  background: var(--scrim); color: var(--chalk); border: 1px solid var(--ink-3); border-radius: 12px;
+  padding: 8px 14px; font-size: 14px; line-height: 1.3; text-align: center; pointer-events: none;
+  opacity: 0; transition: opacity .2s, transform .2s;
+}
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+#mapCtl { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+#mapCtl button {
+  width: 42px; height: 42px; border-radius: 21px; display: grid; place-items: center;
+  background: var(--scrim); border: 1px solid var(--ink-3); color: var(--chalk);
+}
+#mapCtl svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- command strip: bottom sheet */
+#sheet {
+  grid-area: sheet; display: flex; flex-direction: column; gap: 10px;
+  padding-block: 10px 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--ink); border-top: 1px solid var(--ink-3);
+}
+#card { min-height: 116px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+#actions { display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 8px; }
+.btn {
+  min-height: 46px; border-radius: var(--r); background: var(--ink-2); border: 1px solid var(--ink-3);
+  font-weight: 600; font-size: 15px; letter-spacing: .01em; padding: 0 10px; white-space: nowrap;
+}
+.btn:active { filter: brightness(1.2); }
+.btn.primary { background: var(--brass); color: var(--brass-ink); border-color: transparent; }
+.btn.warn { background: var(--garance); color: var(--flag-white); border-color: transparent; }
+.btn:disabled { opacity: .38; }
+.btn.wide { grid-column: span 2; }
+
+.ucard { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.mini { width: 46px; height: 36px; flex: none; }
+.u-name { font-weight: 600; font-size: 16px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.u-sub { color: var(--chalk-2); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.u-str { text-align: right; font-variant-numeric: tabular-nums; }
+.u-str b { font: italic 700 26px/1 var(--f-display); font-variant-numeric: lining-nums tabular-nums; }
+.u-str small { color: var(--chalk-2); font-size: 12px; display: block; letter-spacing: .08em; text-transform: uppercase; }
+.meter { display: flex; gap: 2px; margin-top: 5px; }
+.meter i { width: 12px; height: 4px; border-radius: 1px; background: var(--ink-3); }
+.meter i.on { background: var(--chalk); }
+.meter.low i.on { background: var(--bad); }
+.facts { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--chalk); font-variant-numeric: tabular-nums; }
+.facts em { font-style: normal; color: var(--chalk-2); text-transform: uppercase; letter-spacing: .08em; font-size: 11px; margin-right: 4px; }
+.where { font-size: 13px; color: var(--chalk-2); }
+.where b { color: var(--chalk); font-weight: 500; }
+.tag { display: inline-block; vertical-align: 2px; margin-left: 6px; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; background: var(--ink-3); color: var(--chalk); }
+.tag.ready { background: var(--brass); color: var(--brass-ink); }
+.tag.enemy { background: var(--garance); color: var(--flag-white); }
+.tag.enemy.de { background: var(--prussian); }
+
+.fc-head { font-size: 14px; color: var(--chalk-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc-head b { color: var(--chalk); font-weight: 600; }
+.fc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fc-col { background: var(--ink-2); border-radius: var(--r); padding: 8px 12px; display: flex; flex-direction: column; }
+.fc-col .lbl { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--chalk-2); }
+.fc-col .big { font: italic 700 28px/1.05 var(--f-display); font-variant-numeric: lining-nums; }
+.fc-col .big.good { color: var(--good); }
+.fc-col .big.bad { color: var(--bad); }
+.fc-col .rng { font-size: 12px; color: var(--chalk-2); }
+.mods { font-size: 12px; color: var(--chalk-2); line-height: 1.35; }
+
+.idle-h { font-size: 16px; font-weight: 600; }
+.idle-h small { color: var(--chalk-2); font-weight: 400; font-size: 14px; }
+.objs { display: flex; flex-wrap: wrap; gap: 6px; }
+.obj { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; border-radius: 13px; background: var(--ink-2); font-size: 13px; }
+.obj i { width: 8px; height: 8px; border-radius: 50%; }
+.obj i.de { background: var(--chalk); box-shadow: inset 0 0 0 2px var(--prussian); }
+.obj i.fr { background: var(--garance); }
+.obj b { font-variant-numeric: tabular-nums; color: var(--chalk-2); font-weight: 500; }
+.hint { font-size: 13px; color: var(--chalk-2); }
+.ai-h { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+.dots { display: inline-flex; gap: 4px; }
+.dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--brass); animation: blink 1.2s infinite; }
+.dots i:nth-child(2) { animation-delay: .2s; } .dots i:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
+
+/* ---------- overlays */
+#overlay {
+  position: fixed; inset: 0; z-index: 30; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--scrim); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  padding-block: calc(env(safe-area-inset-top, 0px) + 28px) calc(env(safe-area-inset-bottom, 0px) + 28px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-user-select: text; user-select: text;
+}
+.panel { max-width: 34rem; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.eyebrow { margin: 0; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--brass); }
+.display { margin: 0; font: italic 700 clamp(56px, 18vw, 92px)/.9 var(--f-display); letter-spacing: -.01em; text-wrap: balance; }
+.display.small { font-size: clamp(38px, 11vw, 60px); }
+.date { margin: -6px 0 0; font: 500 15px/1.3 var(--f-ui); color: var(--chalk-2); letter-spacing: .04em; }
+.panel p { margin: 0; max-width: 62ch; }
+.panel .lede { font-size: 16px; line-height: 1.5; }
+.choices { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.choice {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; text-align: left;
+  padding: 14px 16px; border-radius: 14px; background: var(--ink-2); border: 1px solid var(--ink-3);
+}
+.choice b { display: block; font-size: 17px; font-weight: 600; }
+.choice small { display: block; font-size: 13px; color: var(--chalk-2); line-height: 1.35; margin-top: 2px; }
+.choice .arrow { color: var(--brass); font-size: 22px; }
+.choice:active { border-color: var(--brass); }
+.swatch { width: 34px; height: 26px; border-radius: 4px; position: relative; }
+.swatch.de { background: var(--prussian); box-shadow: inset 0 4px 0 var(--flag-black), inset 0 5px 0 var(--flag-white); }
+.swatch.fr { background: var(--garance); box-shadow: inset 0 4px 0 var(--tricolour-blue); }
+.swatch.hs { background: linear-gradient(135deg, var(--prussian) 50%, var(--garance) 50%); }
+.linkbtn { background: none; border: 0; padding: 8px 0; color: var(--brass); font-weight: 600; text-align: left; font-size: 15px; }
+.rules { border-top: 1px solid var(--ink-3); padding-top: 12px; }
+.rules summary { cursor: pointer; font-weight: 600; font-size: 15px; list-style: none; display: flex; justify-content: space-between; min-height: 32px; align-items: center; }
+.rules summary::-webkit-details-marker { display: none; }
+.rules summary::after { content: "+"; color: var(--brass); font-size: 20px; }
+.rules[open] summary::after { content: "–"; }
+.rules ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 7px; font-size: 14px; color: var(--chalk); }
+.rules li::marker { color: var(--brass); }
+.rules h3 { margin: 14px 0 4px; font: italic 600 18px/1.2 var(--f-display); }
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.tbl th, .tbl td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--ink-3); }
+.tbl th { color: var(--chalk-2); font-weight: 500; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.tblwrap { overflow-x: auto; }
+.fine { font-size: 12px; color: var(--chalk-2); line-height: 1.45; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row .btn { flex: 1 1 140px; }
+.menu-list { display: flex; flex-direction: column; gap: 8px; }
+.menu-list .btn { text-align: left; padding: 0 16px; display: flex; justify-content: space-between; align-items: center; }
+.menu-list .btn span { color: var(--chalk-2); font-weight: 400; }
+.log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.log li { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 8px; }
+.log time { color: var(--chalk-2); font-variant-numeric: tabular-nums; }
+.log li.de span { border-left: 3px solid var(--bavaria); padding-left: 8px; }
+.log li.fr span { border-left: 3px solid var(--garance); padding-left: 8px; }
+.log li.capture span, .log li.end span { color: var(--brass); }
+.tally { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tally div { background: var(--ink-2); border-radius: var(--r); padding: 10px 12px; }
+.tally b { display: block; font: italic 700 30px/1.1 var(--f-display); font-variant-numeric: lining-nums; }
+.tally small { color: var(--chalk-2); font-size: 12px; }
+.verdict-de { color: var(--bavaria); }
+.verdict-fr { color: var(--bad); }
+
+/* ---------- landscape: map left, command column right */
+@media (orientation: landscape) and (max-height: 560px) {
+  #app { grid-template-columns: minmax(0, 1fr) clamp(250px, 34%, 330px); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "stage bar" "stage sheet"; }
+  #bar { border-bottom: 1px solid var(--ink-3); border-left: 1px solid var(--ink-3); flex-wrap: wrap; padding-left: 14px; }
+  #sheet { border-top: 0; border-left: 1px solid var(--ink-3); overflow-y: auto; justify-content: space-between; padding-left: 14px; }
+  #stage { margin-left: env(safe-area-inset-left, 0px); }
+  .clock { font-size: 20px; }
+  #actions { grid-template-columns: 1fr 1fr; }
+  #actions .btn.primary { grid-column: span 2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dots i { animation: none; opacity: .8; }
+  #toast { transition: none; }
+}
+</style>
+
+<div id="app">
+  <header id="bar">
+    <div class="turn">
+      <span class="turn-n">Turn <b id="turnNo">1</b>/<span id="turnMax">14</span></span>
+      <span class="clock" id="clock">08:00</span>
+    </div>
+    <div class="side" id="sidePill"><span class="flag de" id="sideFlag"></span><span id="sideName">Germans</span><small id="sideWho"></small></div>
+    <button class="icon-btn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </header>
+  <main id="stage">
+    <canvas id="map" aria-label="Battle map of Wörth. Tap a hex to select it."></canvas>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <div id="mapCtl">
+      <button id="fitBtn" aria-label="Show whole battlefield"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button id="focusBtn" aria-label="Centre on selection"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
+    </div>
+  </main>
+  <section id="sheet">
+    <div id="card"></div>
+    <div id="actions"></div>
+  </section>
+</div>
+<div id="overlay" hidden></div>
+
+<script>
+/* Wörth 1870 — engine: rules, scenario data and AI. No DOM access, so it runs headless for tests. */
+(function (root) {
+  'use strict';
+
+  // ---------------------------------------------------------------- RNG
+  function rand(state) { // mulberry32, state.seed mutates so games are replayable
+    let t = (state.seed = (state.seed + 0x6D2B79F5) | 0);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+
+  // ---------------------------------------------------------------- Hex geometry (pointy-top, odd rows shifted right)
+  // Direction order: E, NE, NW, W, SW, SE
+  const DIRS_EVEN = [[1, 0], [0, -1], [-1, -1], [-1, 0], [-1, 1], [0, 1]];
+  const DIRS_ODD = [[1, 0], [1, -1], [0, -1], [-1, 0], [0, 1], [1, 1]];
+  function neighbour(c, r, d) { const o = (r & 1) ? DIRS_ODD[d] : DIRS_EVEN[d]; return [c + o[0], r + o[1]]; }
+  function toCube(c, r) { const x = c - (r - (r & 1)) / 2; return [x, -x - r, r]; }
+  function hexDist(c1, r1, c2, r2) {
+    const a = toCube(c1, r1), b = toCube(c2, r2);
+    return Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2]));
+  }
+
+  // ---------------------------------------------------------------- Rules data
+  const TERRAIN = {
+    '.': { name: 'Open fields', cost: { foot: 1, horse: 1, guns: 1 }, def: 1.0 },
+    'w': { name: 'Woods', cost: { foot: 2, horse: 3, guns: 3 }, def: 1.5, cover: true },
+    'g': { name: 'Vineyards', cost: { foot: 1.5, horse: 2, guns: 2 }, def: 1.25, cover: true },
+    'v': { name: 'Village', cost: { foot: 1, horse: 1, guns: 1 }, def: 1.6, cover: true },
+    '~': { name: 'River Sauer', cost: { foot: 3, horse: 4, guns: null }, def: 0.6, water: true },
+    'f': { name: 'Ford', cost: { foot: 2, horse: 2, guns: 3 }, def: 0.75, water: true },
+    'b': { name: 'Bridge', cost: { foot: 1, horse: 1, guns: 1 }, def: 0.9 },
+  };
+  const ROAD_COST = { foot: 1, horse: 1, guns: 0.75 };
+  const ELEV_NAMES = ['Valley floor', 'Slopes', 'Heights'];
+
+  // att: firepower against foot / horse / guns. rng: [min, max] in hexes. mof: guns may move OR fire, not both.
+  const UNIT_TYPES = {
+    inf_pr: { name: 'Infantry', kit: 'Dreyse needle gun', cls: 'foot', mv: 3, rng: [1, 1], att: { foot: 6, horse: 6, guns: 7 }, def: 5, zoc: true, sym: 'inf', value: 1 },
+    inf_bv: { name: 'Bavarian infantry', kit: 'Werder & Podewils rifles', cls: 'foot', mv: 3, rng: [1, 1], att: { foot: 6, horse: 6, guns: 7 }, def: 5, zoc: true, sym: 'inf', value: 1 },
+    jaeger: { name: 'Jäger', kit: 'Light infantry; moves freely in woods', cls: 'foot', mv: 4, rng: [1, 1], att: { foot: 6, horse: 5, guns: 7 }, def: 5, zoc: true, sym: 'jaeger', light: true, value: 1 },
+    cav_de: { name: 'Cavalry', kit: 'Uhlans, dragoons, hussars', cls: 'horse', mv: 6, rng: [1, 1], att: { foot: 4, horse: 6, guns: 8 }, def: 3, zoc: true, sym: 'cav', value: 0.9 },
+    art_de: { name: 'Field artillery', kit: 'Krupp steel breech-loaders; +1 range on heights', cls: 'guns', mv: 3, rng: [1, 4], att: { foot: 7.5, horse: 7.5, guns: 7 }, def: 3, zoc: false, mof: true, heightRange: true, sym: 'art', value: 1.3 },
+    inf_fr: { name: 'Infanterie de ligne', kit: 'Chassepot rifle, range 2', cls: 'foot', mv: 3, rng: [1, 2], att: { foot: 6, horse: 7, guns: 5 }, def: 5, zoc: true, sym: 'inf', value: 1 },
+    elite_fr: { name: 'Zouaves / Turcos', kit: 'Chassepot; élan at close quarters', cls: 'foot', mv: 3, rng: [1, 2], att: { foot: 7, horse: 7, guns: 6 }, def: 6, zoc: true, elite: true, sym: 'inf', value: 1.2 },
+    cuir: { name: 'Cuirassiers', kit: 'Heavy cavalry; charges fail against cover', cls: 'horse', mv: 5, rng: [1, 1], att: { foot: 7, horse: 7, guns: 9 }, def: 4, zoc: true, sym: 'cav', value: 1 },
+    art_fr: { name: 'Artillerie', kit: 'La Hitte muzzle-loaders; +1 range on heights', cls: 'guns', mv: 3, rng: [1, 2], att: { foot: 6, horse: 6, guns: 4 }, def: 3, zoc: false, mof: true, heightRange: true, sym: 'art', value: 1.2 },
+    mitr: { name: 'Mitrailleuses', kit: 'Reffye volley guns; deadly to men, weak against guns', cls: 'guns', mv: 3, rng: [1, 2], att: { foot: 9, horse: 9, guns: 2 }, def: 3, zoc: false, mof: true, sym: 'mg', value: 1.1 },
+  };
+
+  const K = 6; // firepower scale: expected losses = K * strength/10 * att / (att + def)
+
+  // ---------------------------------------------------------------- Scenario: Wörth, 6 August 1870
+  function riverPath() {
+    const p = [];
+    for (let r = 0; r <= 15; r++) p.push([10, r]);
+    p.push([11, 16], [11, 17]);
+    return p;
+  }
+
+  const SCENARIOS = {
+    woerth: {
+      id: 'woerth',
+      title: 'Wörth',
+      subtitle: 'Froeschwiller · 6 August 1870',
+      cols: 16, rows: 18, hexMetres: 600,
+      turns: 14, startMinutes: 8 * 60, minutesPerTurn: 45,
+      order: ['de', 'fr'],
+      winVP: 6, loseVP: 3,
+      terrain: [
+        '.wwwwwwww.~...ww',
+        '..wwwwwww.~...w.',
+        '..vwwwwvw.~..v..',
+        '...wwwwww.~.....',
+        '..gwwww...~..w..',
+        '...g.gg...~....w',
+        'v...v.gg.vb....v',
+        '....g.g.g.~.....',
+        '.....v.g..~.....',
+        '....g.....fv..w.',
+        '....wwww..~.....',
+        '...wwwww..~..w..',
+        '....wwww..bv....',
+        '.....ww...~...w.',
+        '..w....v..~.....',
+        '..ww......~.....',
+        '...........~....',
+        '...........~....',
+      ],
+      elevation: [
+        '2222222110011111',
+        '2222222110011111',
+        '2222221110011111',
+        '1222221110012211',
+        '1222221110012211',
+        '1222221110012211',
+        '0122221110012211',
+        '0122221110012211',
+        '1122221110012221',
+        '1112221110012221',
+        '1111111110012221',
+        '1111111110012221',
+        '1111111110012221',
+        '1111111110011111',
+        '1111111100011111',
+        '1111111100011111',
+        '1111111100000111',
+        '1111111100000111',
+      ],
+      river: riverPath(),
+      roads: [
+        [[0, 6], [1, 6], [2, 6], [3, 6], [4, 6], [5, 6], [6, 6], [7, 6], [8, 6], [9, 6], [10, 6], [11, 6], [12, 6], [13, 6], [14, 6], [15, 6]],
+        [[4, 6], [4, 7], [5, 8], [5, 9], [6, 10], [6, 11], [7, 12], [7, 13], [7, 14], [7, 15], [7, 16], [7, 17]],
+        [[13, 2], [12, 3], [12, 4], [11, 5], [11, 6], [11, 7], [11, 8], [11, 9], [11, 10], [11, 11], [11, 12], [12, 12], [13, 12], [14, 12], [15, 12]],
+        [[11, 12], [10, 12], [9, 12], [8, 13], [7, 13]],
+        [[9, 6], [8, 5], [8, 4], [7, 3], [7, 2], [7, 1], [7, 0]],
+        [[4, 6], [3, 5], [3, 4], [2, 3], [2, 2]],
+      ],
+      places: [
+        { c: 4, r: 6, name: 'Froeschwiller' }, { c: 9, r: 6, name: 'Wörth' }, { c: 5, r: 8, name: 'Elsasshausen' },
+        { c: 7, r: 14, name: 'Morsbronn' }, { c: 11, r: 12, name: 'Gunstett' }, { c: 11, r: 9, name: 'Spachbach' },
+        { c: 7, r: 2, name: 'Langensoultzbach' }, { c: 2, r: 2, name: 'Neehwiller' }, { c: 13, r: 2, name: 'Görsdorf' },
+        { c: 0, r: 6, name: 'Reichshoffen' }, { c: 15, r: 6, name: 'Preuschdorf' },
+      ],
+      areaLabels: [
+        { c: 5.6, r: 11.2, name: 'Niederwald' },
+        { c: 4.4, r: 0.9, name: 'Hochwald' },
+        { c: 10.15, r: 3.2, name: 'Sauer', river: true },
+      ],
+      objectives: [
+        { c: 4, r: 6, name: 'Froeschwiller', vp: 4, owner: 'fr' },
+        { c: 5, r: 8, name: 'Elsasshausen', vp: 2, owner: 'fr' },
+        { c: 9, r: 6, name: 'Wörth', vp: 1, owner: 'fr' },
+        { c: 7, r: 14, name: 'Morsbronn', vp: 1, owner: 'fr' },
+        { c: 5, r: 11, name: 'Niederwald', vp: 1, owner: 'fr' },
+      ],
+      sides: {
+        de: { name: 'German Third Army', short: 'Germans', commander: 'Crown Prince Friedrich Wilhelm', ai: 'attack' },
+        fr: { name: 'Armée d’Alsace', short: 'French', commander: 'Maréchal de MacMahon', ai: 'defend' },
+      },
+      units: [
+        // ---- French: I Corps (MacMahon) on the Froeschwiller ridge, with Conseil-Dumesnil's division of VII Corps
+        { id: 'fr-d1', side: 'fr', nat: 'fr', type: 'inf_fr', name: '1re brigade', sub: 'Division Ducrot', short: 'D1', c: 4, r: 4 },
+        { id: 'fr-d2', side: 'fr', nat: 'fr', type: 'inf_fr', name: '2e brigade', sub: 'Division Ducrot', short: 'D2', c: 6, r: 4 },
+        { id: 'fr-r1', side: 'fr', nat: 'fr', type: 'inf_fr', name: '1re brigade', sub: 'Division Raoult', short: 'R1', c: 7, r: 5 },
+        { id: 'fr-r2', side: 'fr', nat: 'fr', type: 'inf_fr', name: '2e brigade', sub: 'Division Raoult', short: 'R2', c: 7, r: 7 },
+        { id: 'fr-zv', side: 'fr', nat: 'fr', type: 'elite_fr', name: 'Zouaves', sub: 'I Corps', short: 'Zv', c: 8, r: 8 },
+        { id: 'fr-l1', side: 'fr', nat: 'fr', type: 'inf_fr', name: '1re brigade', sub: 'Division Lartigue', short: 'L1', c: 6, r: 10 },
+        { id: 'fr-l2', side: 'fr', nat: 'fr', type: 'inf_fr', name: '2e brigade', sub: 'Division Lartigue', short: 'L2', c: 7, r: 14 },
+        { id: 'fr-tu', side: 'fr', nat: 'fr', type: 'elite_fr', name: 'Tirailleurs algériens', sub: 'I Corps', short: 'Tu', c: 5, r: 11 },
+        { id: 'fr-cd', side: 'fr', nat: 'fr', type: 'inf_fr', name: 'Division Conseil-Dumesnil', sub: 'VII Corps', short: 'CD', c: 4, r: 9, str: 9 },
+        { id: 'fr-pe', side: 'fr', nat: 'fr', type: 'inf_fr', name: 'Division Pellé', sub: 'ex-Douay, mauled at Wissembourg', short: 'Pe', c: 3, r: 6, str: 6 },
+        { id: 'fr-ar', side: 'fr', nat: 'fr', type: 'art_fr', name: 'Réserve d’artillerie', sub: 'I Corps', short: 'AR', c: 5, r: 6 },
+        { id: 'fr-ad', side: 'fr', nat: 'fr', type: 'art_fr', name: 'Batteries divisionnaires', sub: 'I Corps', short: 'AD', c: 5, r: 7 },
+        { id: 'fr-m1', side: 'fr', nat: 'fr', type: 'mitr', name: 'Mitrailleuses', sub: 'Division Raoult', short: 'M1', c: 5, r: 5 },
+        { id: 'fr-m2', side: 'fr', nat: 'fr', type: 'mitr', name: 'Mitrailleuses', sub: 'Division Lartigue', short: 'M2', c: 5, r: 9 },
+        { id: 'fr-mi', side: 'fr', nat: 'fr', type: 'cuir', name: 'Brigade Michel', sub: '8e & 9e cuirassiers', short: 'Mi', c: 4, r: 13, str: 8 },
+        { id: 'fr-bo', side: 'fr', nat: 'fr', type: 'cuir', name: 'Division Bonnemains', sub: '1er–4e cuirassiers', short: 'Bo', c: 2, r: 8 },
+        { id: 'fr-gl', side: 'fr', nat: 'fr', type: 'inf_fr', name: 'Division Guyot de Lespart', sub: 'V Corps, too late to matter?', short: 'GL', c: 0, r: 6, str: 8, arrive: 10 },
+
+        // ---- German: V Corps (Kirchbach) in the centre
+        { id: 'de-17', side: 'de', nat: 'pr', type: 'inf_pr', name: '17. Infanterie-Brigade', sub: '9. Division · V. Armeekorps', short: '17', c: 12, r: 5 },
+        { id: 'de-18', side: 'de', nat: 'pr', type: 'inf_pr', name: '18. Infanterie-Brigade', sub: '9. Division · V. Armeekorps', short: '18', c: 13, r: 6 },
+        { id: 'de-19', side: 'de', nat: 'pr', type: 'inf_pr', name: '19. Infanterie-Brigade', sub: '10. Division · V. Armeekorps', short: '19', c: 12, r: 7 },
+        { id: 'de-20', side: 'de', nat: 'pr', type: 'inf_pr', name: '20. Infanterie-Brigade', sub: '10. Division · V. Armeekorps', short: '20', c: 14, r: 7 },
+        { id: 'de-j5', side: 'de', nat: 'pr', type: 'jaeger', name: 'Jäger-Bataillon Nr. 5', sub: 'V. Armeekorps', short: 'J5', c: 11, r: 7, str: 6 },
+        { id: 'de-ka5', side: 'de', nat: 'pr', type: 'art_de', name: 'Korps-Artillerie', sub: 'V. Armeekorps', short: 'KA', c: 12, r: 6 },
+        { id: 'de-da5', side: 'de', nat: 'pr', type: 'art_de', name: 'Divisions-Artillerie', sub: 'V. Armeekorps', short: 'DA', c: 13, r: 8 },
+        { id: 'de-cv5', side: 'de', nat: 'pr', type: 'cav_de', name: 'Divisions-Kavallerie', sub: 'V. Armeekorps', short: 'Kv', c: 15, r: 7, str: 6 },
+        // ---- German: II Bavarian Corps (Hartmann) in the north
+        { id: 'de-b7', side: 'de', nat: 'bv', type: 'inf_bv', name: '7. Infanterie-Brigade', sub: '4. Division · II. bayer. Korps', short: 'B7', c: 8, r: 2 },
+        { id: 'de-b8', side: 'de', nat: 'bv', type: 'inf_bv', name: '8. Infanterie-Brigade', sub: '4. Division · II. bayer. Korps', short: 'B8', c: 9, r: 3 },
+        { id: 'de-ba', side: 'de', nat: 'bv', type: 'art_de', name: 'Artillerie', sub: 'II. bayer. Korps', short: 'BA', c: 9, r: 1 },
+        { id: 'de-b5', side: 'de', nat: 'bv', type: 'inf_bv', name: '5. Infanterie-Brigade', sub: '3. Division · II. bayer. Korps', short: 'B5', c: 7, r: 0, arrive: 3 },
+        { id: 'de-b6', side: 'de', nat: 'bv', type: 'inf_bv', name: '6. Infanterie-Brigade', sub: '3. Division · II. bayer. Korps', short: 'B6', c: 9, r: 0, arrive: 4 },
+        { id: 'de-b1', side: 'de', nat: 'bv', type: 'inf_bv', name: '1. Division', sub: 'I. bayer. Korps (von der Tann)', short: 'B1', c: 8, r: 0, arrive: 7 },
+        // ---- German: XI Corps (Bose) in the south, arriving via Gunstett
+        { id: 'de-41', side: 'de', nat: 'pr', type: 'inf_pr', name: '41. Infanterie-Brigade', sub: '21. Division · XI. Armeekorps', short: '41', c: 12, r: 11 },
+        { id: 'de-ka11', side: 'de', nat: 'pr', type: 'art_de', name: 'Korps-Artillerie', sub: 'XI. Armeekorps', short: 'KA', c: 13, r: 10 },
+        { id: 'de-42', side: 'de', nat: 'pr', type: 'inf_pr', name: '42. Infanterie-Brigade', sub: '21. Division · XI. Armeekorps', short: '42', c: 15, r: 12, arrive: 2 },
+        { id: 'de-j11', side: 'de', nat: 'pr', type: 'jaeger', name: 'Jäger-Bataillon Nr. 11', sub: 'XI. Armeekorps', short: 'J11', c: 15, r: 13, str: 6, arrive: 2 },
+        { id: 'de-43', side: 'de', nat: 'pr', type: 'inf_pr', name: '43. Infanterie-Brigade', sub: '22. Division · XI. Armeekorps', short: '43', c: 15, r: 12, arrive: 3 },
+        { id: 'de-cv11', side: 'de', nat: 'pr', type: 'cav_de', name: 'Divisions-Kavallerie', sub: 'XI. Armeekorps', short: 'Kv', c: 15, r: 14, str: 6, arrive: 3 },
+        { id: 'de-44', side: 'de', nat: 'pr', type: 'inf_pr', name: '44. Infanterie-Brigade', sub: '22. Division · XI. Armeekorps', short: '44', c: 15, r: 12, arrive: 4 },
+        { id: 'de-da11', side: 'de', nat: 'pr', type: 'art_de', name: 'Divisions-Artillerie', sub: 'XI. Armeekorps', short: 'DA', c: 15, r: 11, arrive: 4 },
+        // ---- German: Württemberg Division from the south-east
+        { id: 'de-wu', side: 'de', nat: 'wu', type: 'inf_pr', name: 'Württ. Feld-Division', sub: 'Brigade Starkloff', short: 'Wü', c: 14, r: 17, arrive: 7 },
+      ],
+      briefing: [
+        'Marshal MacMahon’s corps holds the wooded ridge between Froeschwiller and Elsasshausen, west of the Sauer. Neither command meant to fight today. Outpost firing at Wörth has drawn in the Bavarians from the north, then the Prussian V Corps in the centre and XI Corps at Gunstett.',
+        'The French have the ground and the longer-ranged Chassepot. The Germans have more men arriving by the hour and much better artillery.',
+      ],
+      history: 'Historically the German Third Army carried Elsasshausen in the afternoon and Froeschwiller fell at about 17:00. Both sides lost on the order of 10,000 killed and wounded; the French also lost several thousand prisoners, and MacMahon retreated through Reichshoffen.',
+    },
+  };
+
+  // ---------------------------------------------------------------- Map build
+  const mapCache = {};
+  function buildMap(sc) {
+    if (mapCache[sc.id]) return mapCache[sc.id];
+    const W = sc.cols, H = sc.rows, N = W * H;
+    const ter = new Array(N), elev = new Int8Array(N);
+    for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+      const i = r * W + c;
+      ter[i] = sc.terrain[r][c];
+      elev[i] = +sc.elevation[r][c];
+      if (!TERRAIN[ter[i]]) throw new Error('Unknown terrain at ' + c + ',' + r);
+    }
+    const nbrs = [];
+    for (let i = 0; i < N; i++) {
+      const c = i % W, r = (i / W) | 0, list = [];
+      for (let d = 0; d < 6; d++) {
+        const [nc, nr] = neighbour(c, r, d);
+        if (nc >= 0 && nc < W && nr >= 0 && nr < H) list.push([d, nr * W + nc]);
+      }
+      nbrs.push(list);
+    }
+    const roadEdges = new Set(), roadHex = new Uint8Array(N);
+    const key = (a, b) => a < b ? a * 10000 + b : b * 10000 + a;
+    for (const road of sc.roads) {
+      for (let k = 0; k < road.length; k++) {
+        const i = road[k][1] * W + road[k][0];
+        roadHex[i] = 1;
+        if (k > 0) {
+          const j = road[k - 1][1] * W + road[k - 1][0];
+          if (!nbrs[i].some(([, n]) => n === j)) throw new Error('Road gap at ' + road[k]);
+          roadEdges.add(key(i, j));
+        }
+      }
+    }
+    // distance rings for range lookups
+    const rings = [];
+    for (let i = 0; i < N; i++) {
+      const c = i % W, r = (i / W) | 0, byD = [[], [], [], [], [], [], []];
+      for (let j = 0; j < N; j++) {
+        const d = hexDist(c, r, j % W, (j / W) | 0);
+        if (d <= 6) byD[d].push(j);
+      }
+      rings.push(byD);
+    }
+    const objIdx = sc.objectives.map(o => o.r * W + o.c);
+    const m = { W, H, N, ter, elev, nbrs, roadEdges, roadHex, rings, objIdx, edgeKey: key };
+    mapCache[sc.id] = m;
+    return m;
+  }
+
+  // ---------------------------------------------------------------- State
+  const other = s => (s === 'de' ? 'fr' : 'de');
+  function scen(state) { return SCENARIOS[state.scenarioId]; }
+  function mapOf(state) { return buildMap(scen(state)); }
+  function idxOf(state, u) { return u.r * scen(state).cols + u.c; }
+
+  function newGame(scenarioId, players, seed) {
+    const sc = SCENARIOS[scenarioId];
+    const state = {
+      v: 1, scenarioId, turn: 1, side: sc.order[0], seed: (seed >>> 0) || ((Math.random() * 2 ** 31) | 0),
+      players: players || { de: 'human', fr: 'ai' },
+      control: sc.objectives.map(o => o.owner),
+      units: sc.units.map(u => ({
+        id: u.id, side: u.side, nat: u.nat, type: u.type, name: u.name, sub: u.sub, short: u.short,
+        c: u.c, r: u.r, entry: [u.c, u.r], str: u.str || 10, max: u.str || 10, arrive: u.arrive || 0,
+        on: !u.arrive, dead: false, mp: 0, moved: false, fired: false, acted: false, engaged: false,
+      })),
+      log: [], over: null, lastEvents: [],
+    };
+    startSideTurn(state);
+    return state;
+  }
+
+  function live(state, side) { return state.units.filter(u => u.on && !u.dead && (!side || u.side === side)); }
+  function occupancy(state) {
+    const occ = new Array(mapOf(state).N).fill(null);
+    for (const u of state.units) if (u.on && !u.dead) occ[idxOf(state, u)] = u;
+    return occ;
+  }
+  function unitAt(state, c, r) { return state.units.find(u => u.on && !u.dead && u.c === c && u.r === r) || null; }
+
+  function clock(state, turn) {
+    const sc = scen(state), m = sc.startMinutes + ((turn || state.turn) - 1) * sc.minutesPerTurn;
+    return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  }
+  function addLog(state, text, kind) {
+    state.log.push({ t: state.turn, time: clock(state), side: state.side, text, kind: kind || 'info' });
+    if (state.log.length > 400) state.log.shift();
+  }
+  function unitLabel(u) { return u.sub && u.nat === 'fr' && /brigade|Mitrailleuses/.test(u.name) ? u.name + ' (' + u.sub.replace('Division ', '') + ')' : u.name; }
+
+  // ---------------------------------------------------------------- Movement
+  function stepCost(map, T, from, to) {
+    const t = TERRAIN[map.ter[to]];
+    const road = map.roadEdges.has(map.edgeKey(from, to));
+    let cost;
+    if (road) cost = ROAD_COST[T.cls];
+    else {
+      cost = t.cost[T.cls];
+      if (cost == null) return Infinity;
+      if (T.light && map.ter[to] === 'w') cost = 1;
+    }
+    if (map.elev[to] > map.elev[from]) cost += road ? 0.25 : (T.cls === 'guns' ? 1 : 0.5);
+    return cost;
+  }
+
+  function zocSet(state, side, occ) { // hexes adjacent to an enemy of `side` that exerts ZOC
+    const map = mapOf(state), z = new Uint8Array(map.N);
+    for (const e of live(state, other(side))) {
+      if (!UNIT_TYPES[e.type].zoc) continue;
+      for (const [, n] of map.nbrs[idxOf(state, e)]) z[n] = 1;
+    }
+    return z;
+  }
+
+  // Returns Map idx -> {cost, prev, end, stop}. `fresh` ignores spent MP (used by the AI to project the enemy's next turn).
+  function reachable(state, u, opts) {
+    opts = opts || {};
+    const map = mapOf(state), T = UNIT_TYPES[u.type];
+    const start = idxOf(state, u);
+    const occ = opts.occ || occupancy(state);
+    const zoc = opts.zoc || zocSet(state, u.side, occ);
+    const mp = opts.fresh ? T.mv : u.mp;
+    const full = opts.fresh || (!u.moved && u.mp >= T.mv);
+    const res = new Map();
+    res.set(start, { cost: 0, prev: -1, end: true, stop: false });
+    if (mp <= 0) return res;
+    const dist = new Float64Array(map.N).fill(Infinity);
+    dist[start] = 0;
+    const open = [start];
+    const closed = new Uint8Array(map.N);
+    while (open.length) {
+      let bi = 0;
+      for (let k = 1; k < open.length; k++) if (dist[open[k]] < dist[open[bi]]) bi = k;
+      const cur = open.splice(bi, 1)[0];
+      if (closed[cur]) continue;
+      closed[cur] = 1;
+      const curInfo = res.get(cur);
+      if (cur !== start && curInfo.stop) continue;
+      for (const [, n] of map.nbrs[cur]) {
+        const o = occ[n];
+        if (o && o.side !== u.side) continue;
+        let c = stepCost(map, T, cur, n);
+        if (!isFinite(c)) continue;
+        let nd = dist[cur] + c;
+        if (nd > mp + 1e-9) {
+          // minimum move: a fresh unit may always move one hex into passable terrain
+          if (!(cur === start && full)) continue;
+          nd = mp;
+        }
+        if (nd < dist[n] - 1e-9) {
+          dist[n] = nd;
+          res.set(n, { cost: nd, prev: cur, end: !o, stop: !!zoc[n] });
+          open.push(n);
+        }
+      }
+    }
+    return res;
+  }
+
+  function pathTo(reach, idx) {
+    const p = [];
+    let k = idx;
+    while (k !== -1 && reach.has(k)) { p.unshift(k); k = reach.get(k).prev; }
+    return p;
+  }
+
+  function canMove(u) { return u.on && !u.dead && !u.fired && u.mp > 0; }
+  function canFire(u) { return u.on && !u.dead && !u.fired && !(UNIT_TYPES[u.type].mof && u.moved); }
+
+  function moveUnit(state, u, c, r) {
+    if (state.over || u.side !== state.side || !canMove(u)) return null;
+    const map = mapOf(state), sc = scen(state);
+    const to = r * sc.cols + c;
+    const reach = reachable(state, u);
+    const info = reach.get(to);
+    if (!info || !info.end || to === idxOf(state, u)) return null;
+    const path = pathTo(reach, to);
+    const undo = { id: u.id, c: u.c, r: u.r, mp: u.mp, moved: u.moved, control: state.control.slice(), logLen: state.log.length };
+    u.c = c; u.r = r;
+    u.mp = Math.max(0, u.mp - info.cost);
+    if (info.stop) u.mp = 0; // entering an enemy zone of control ends movement
+    u.moved = true; u.acted = true;
+    const oi = map.objIdx.indexOf(to);
+    if (oi >= 0 && state.control[oi] !== u.side) {
+      state.control[oi] = u.side;
+      addLog(state, unitLabel(u) + ' takes ' + sc.objectives[oi].name + '.', 'capture');
+    }
+    state.undo = undo;
+    return { path: path.map(i => [i % sc.cols, (i / sc.cols) | 0]), stop: info.stop };
+  }
+
+  function undoMove(state) {
+    const un = state.undo;
+    if (!un) return false;
+    const u = state.units.find(x => x.id === un.id);
+    if (!u || u.fired) { state.undo = null; return false; }
+    u.c = un.c; u.r = un.r; u.mp = un.mp; u.moved = un.moved;
+    u.acted = un.moved;
+    state.control = un.control;
+    state.log.length = un.logLen;
+    state.undo = null;
+    return true;
+  }
+
+  // ---------------------------------------------------------------- Combat
+  function fireRange(state, u, idx) {
+    const T = UNIT_TYPES[u.type];
+    let max = T.rng[1];
+    if (T.heightRange && mapOf(state).elev[idx] >= 2) max += 1;
+    return [T.rng[0], max];
+  }
+
+  function targetsFrom(state, u, idx, occ) {
+    const map = mapOf(state);
+    occ = occ || occupancy(state);
+    const [lo, hi] = fireRange(state, u, idx), out = [];
+    for (let d = lo; d <= hi; d++) for (const j of map.rings[idx][d]) {
+      const e = occ[j];
+      if (e && e.side !== u.side) out.push(e);
+    }
+    return out;
+  }
+
+  function fireExpect(state, s, sIdx, t, tIdx, counter) {
+    const map = mapOf(state), S = UNIT_TYPES[s.type], Tt = UNIT_TYPES[t.type], W = scen(state).cols;
+    const st = TERRAIN[map.ter[sIdx]], tt = TERRAIN[map.ter[tIdx]];
+    const d = hexDist(sIdx % W, (sIdx / W) | 0, tIdx % W, (tIdx / W) | 0);
+    const mods = [];
+    let a = S.att[Tt.cls];
+    if (st.water) { a *= 0.7; mods.push('Firing from the water ×0.7'); }
+    if (S.cls === 'horse' && tt.cover && !counter) { a *= 0.5; mods.push('Charge into cover ×0.5'); }
+    if (S.cls === 'foot' && d >= 2) { a *= 0.9; mods.push('Long range ×0.9'); }
+    if (S.elite && d === 1 && !counter) { a *= 1.2; mods.push('Élan ×1.2'); }
+    let df = Tt.def * tt.def;
+    if (tt.def > 1) mods.push(tt.name + ' cover ×' + tt.def);
+    if (tt.def < 1) mods.push('Target in ' + tt.name.toLowerCase() + ' ×' + tt.def);
+    if (map.elev[tIdx] > map.elev[sIdx]) { df *= 1.25; mods.push('Target holds higher ground ×1.25'); }
+    if (Tt.cls === 'guns' && d === 1) { df *= 0.75; mods.push('Guns rushed at close quarters'); }
+    const exp = K * (s.str / 10) * a / (a + df) * (counter ? 0.7 : 1);
+    return { exp, mods, dist: d };
+  }
+
+  function canCounter(state, def, dIdx, aIdx) {
+    const W = scen(state).cols;
+    const d = hexDist(dIdx % W, (dIdx / W) | 0, aIdx % W, (aIdx / W) | 0);
+    const [lo, hi] = fireRange(state, def, dIdx);
+    return d >= lo && d <= hi;
+  }
+
+  function spread(exp) { return [Math.floor(exp * 0.5), Math.ceil(exp * 1.5)]; }
+
+  function forecast(state, u, t) {
+    const ui = idxOf(state, u), ti = idxOf(state, t);
+    const f = fireExpect(state, u, ui, t, ti, false);
+    const dmg = Math.min(f.exp, t.str);
+    let back = null;
+    if (t.str - dmg > 0 && canCounter(state, t, ti, ui)) {
+      const g = fireExpect(state, Object.assign({}, t, { str: Math.max(1, t.str - Math.round(dmg)) }), ti, u, ui, true);
+      back = { exp: g.exp, range: spread(g.exp).map(x => Math.min(x, u.str)), mods: g.mods };
+    }
+    return { exp: dmg, range: spread(f.exp).map(x => Math.min(x, t.str)), mods: f.mods, back, dist: f.dist };
+  }
+
+  function roll(state, exp) {
+    const x = exp * (0.5 + rand(state));
+    const f = Math.floor(x);
+    return f + (rand(state) < x - f ? 1 : 0);
+  }
+
+  function attack(state, u, t) {
+    if (state.over || u.side !== state.side || !canFire(u) || t.side === u.side || t.dead) return null;
+    const ui = idxOf(state, u), ti = idxOf(state, t);
+    if (!targetsFrom(state, u, ui).includes(t)) return null;
+    const f = fireExpect(state, u, ui, t, ti, false);
+    const dmg = Math.min(roll(state, f.exp), t.str);
+    t.str -= dmg;
+    t.engaged = true;
+    let back = 0, countered = false;
+    if (t.str > 0 && canCounter(state, t, ti, ui)) {
+      countered = true;
+      const g = fireExpect(state, t, ti, u, ui, true);
+      back = Math.min(roll(state, g.exp), u.str);
+      u.str -= back;
+    }
+    u.fired = true; u.mp = 0; u.acted = true;
+    state.undo = null;
+    const killed = t.str <= 0, lost = u.str <= 0;
+    if (killed) t.dead = true;
+    if (lost) u.dead = true;
+    let txt = unitLabel(u) + ' engages ' + unitLabel(t) + ': −' + dmg;
+    if (countered) txt += ', return fire −' + back;
+    if (killed) txt += '. ' + unitLabel(t) + ' is broken';
+    if (lost) txt += '. ' + unitLabel(u) + ' is broken';
+    addLog(state, txt + '.', u.side);
+    checkCollapse(state);
+    return { dmg, back, countered, killed, lost, from: [u.c, u.r], to: [t.c, t.r], attackerId: u.id, targetId: t.id };
+  }
+
+  // ---------------------------------------------------------------- Turn flow and victory
+  function arrivalHex(state, u, occ) {
+    const map = mapOf(state), sc = scen(state), T = UNIT_TYPES[u.type];
+    const start = u.entry[1] * sc.cols + u.entry[0];
+    const seen = new Set([start]), q = [start];
+    while (q.length) {
+      const i = q.shift();
+      const ok = !occ[i] && TERRAIN[map.ter[i]].cost[T.cls] != null;
+      if (ok) {
+        const enemyNear = map.nbrs[i].some(([, n]) => occ[n] && occ[n].side !== u.side);
+        if (!enemyNear) return i;
+      }
+      if (seen.size > 40) break;
+      for (const [, n] of map.nbrs[i]) if (!seen.has(n)) { seen.add(n); q.push(n); }
+    }
+    return -1;
+  }
+
+  function startSideTurn(state) {
+    const sc = scen(state), occ = occupancy(state);
+    const arrived = [];
+    for (const u of state.units) {
+      if (u.side !== state.side) continue;
+      if (!u.on && !u.dead && u.arrive && u.arrive <= state.turn) {
+        const i = arrivalHex(state, u, occ);
+        if (i >= 0) { u.c = i % sc.cols; u.r = (i / sc.cols) | 0; u.on = true; occ[i] = u; arrived.push(u); }
+      }
+      if (u.on && !u.dead) {
+        u.mp = UNIT_TYPES[u.type].mv; u.moved = false; u.fired = false; u.acted = false;
+      }
+    }
+    for (const u of arrived) addLog(state, unitLabel(u) + ' arrives on the field.', 'arrive');
+    state.arrivals = arrived.map(u => u.id);
+    state.undo = null;
+  }
+
+  function endSideTurn(state) {
+    if (state.over) return;
+    const sc = scen(state), occ = occupancy(state), map = mapOf(state);
+    for (const u of live(state, state.side)) {
+      const adj = map.nbrs[idxOf(state, u)].some(([, n]) => occ[n] && occ[n].side !== u.side);
+      if (!u.acted && !u.engaged && !adj && u.str < u.max) u.str += 1;
+      u.engaged = false;
+    }
+    const last = state.side === sc.order[sc.order.length - 1];
+    if (last) {
+      if (state.turn >= sc.turns) { finalVerdict(state); return; }
+      state.turn += 1;
+    }
+    state.side = other(state.side);
+    startSideTurn(state);
+  }
+
+  function vp(state) {
+    const sc = scen(state), out = { de: 0, fr: 0 };
+    sc.objectives.forEach((o, i) => { out[state.control[i]] += o.vp; });
+    return out;
+  }
+
+  function strength(state, side) {
+    let now = 0, committed = 0;
+    for (const u of state.units) {
+      if (u.side !== side || (!u.on && !u.dead)) continue;
+      committed += u.max;
+      if (!u.dead) now += u.str;
+    }
+    return { now, committed };
+  }
+
+  function checkCollapse(state) {
+    if (state.over) return;
+    for (const side of ['de', 'fr']) {
+      const s = strength(state, side);
+      if (s.committed > 0 && s.now <= s.committed * 0.3) {
+        state.over = { winner: other(side), reason: 'collapse', loser: side, turn: state.turn };
+        addLog(state, scen(state).sides[side].short + ' resistance collapses.', 'end');
+        return;
+      }
+    }
+  }
+
+  function finalVerdict(state) {
+    const sc = scen(state), v = vp(state);
+    let winner = 'draw';
+    if (v.de >= sc.winVP) winner = 'de';
+    else if (v.de <= sc.loseVP) winner = 'fr';
+    state.over = { winner, reason: 'time', vp: v, turn: state.turn };
+    addLog(state, 'Nightfall. ' + (winner === 'draw' ? 'The day ends without a decision.' : sc.sides[winner].short + ' hold the field.'), 'end');
+  }
+
+  // ---------------------------------------------------------------- AI
+  const AIP = {
+    attack: { cover: 1.2, fear: 0.45, pull: 1.1, capture: 3, garrison: 1.0, fireProspect: 0.45, caution: 0.7, support: 0.5 },
+    defend: { cover: 2.0, fear: 0.9, hold: 0.9, radius: 2, retake: 0.5, garrison: 2.2, fireProspect: 0.4, caution: 1.0, support: 0.3 },
+  };
+
+  const fieldCache = {};
+  function costField(state, cls, target) { // movement-cost distance from every hex to `target`, ignoring units
+    const sc = scen(state), k = sc.id + cls + target;
+    if (fieldCache[k]) return fieldCache[k];
+    const map = mapOf(state), T = { cls, light: false };
+    const dist = new Float64Array(map.N).fill(Infinity);
+    dist[target] = 0;
+    const open = [target], closed = new Uint8Array(map.N);
+    while (open.length) {
+      let bi = 0;
+      for (let q = 1; q < open.length; q++) if (dist[open[q]] < dist[open[bi]]) bi = q;
+      const cur = open.splice(bi, 1)[0];
+      if (closed[cur]) continue;
+      closed[cur] = 1;
+      for (const [, n] of map.nbrs[cur]) {
+        const c = stepCost(map, T, n, cur);
+        if (!isFinite(c)) continue;
+        if (dist[cur] + c < dist[n]) { dist[n] = dist[cur] + c; open.push(n); }
+      }
+    }
+    fieldCache[k] = dist;
+    return dist;
+  }
+
+  function aiContext(state, side) {
+    const map = mapOf(state), sc = scen(state);
+    const occ = occupancy(state);
+    const enemies = live(state, other(side));
+    const threat = Array.from({ length: map.N }, () => []);
+    const zocMine = zocSet(state, other(side), occ); // ZOC that my units exert on the enemy
+    for (const e of enemies) {
+      const T = UNIT_TYPES[e.type], ei = idxOf(state, e);
+      let positions = [ei];
+      if (!T.mof) {
+        const R = reachable(state, e, { fresh: true, occ, zoc: zocMine });
+        positions = [];
+        for (const [k, v] of R) if (v.end || k === ei) positions.push(k);
+      }
+      const hit = new Set();
+      for (const p of positions) {
+        const [lo, hi] = fireRange(state, e, p);
+        for (let d = lo; d <= hi; d++) for (const j of map.rings[p][d]) hit.add(j);
+      }
+      for (const h of hit) threat[h].push(e);
+      e._hit = hit;
+    }
+    // how many of my units each enemy can choose between: its fire is shared out among them
+    const mine = live(state, side);
+    for (const e of enemies) {
+      let n = 0;
+      for (const m of mine) if (e._hit.has(idxOf(state, m))) n++;
+      e._share = n;
+      delete e._hit;
+    }
+    const posture = AIP[sc.sides[side].ai];
+    return { state, side, map, sc, occ, enemies, threat, P: posture, mode: sc.sides[side].ai };
+  }
+
+  function incoming(ctx, u, idx) {
+    const list = ctx.threat[idx];
+    if (!list.length) return 0;
+    const probe = u;
+    const vals = [];
+    for (const e of list) {
+      if (e.dead) continue;
+      const sh = ctx.mode === 'attack' ? Math.sqrt(1 + (e._share || 0)) : Math.sqrt(1 + 0.5 * (e._share || 0));
+      vals.push(fireExpect(ctx.state, e, idxOf(ctx.state, e), probe, idx, false).exp / sh);
+    }
+    vals.sort((a, b) => b - a);
+    return (vals[0] || 0) + (vals[1] || 0) * 0.8 + (vals[2] || 0) * 0.6;
+  }
+
+  function posScore(ctx, u, idx) {
+    const { state, map, sc, P } = ctx;
+    const T = UNIT_TYPES[u.type], tt = TERRAIN[map.ter[idx]];
+    const urgency = 0.6 + 0.8 * state.turn / sc.turns;
+    let s = 0;
+    s += P.cover * (tt.def * (1 + 0.1 * map.elev[idx]) - 1) * (T.cls === 'horse' ? 0.3 : 1);
+    s -= P.fear * incoming(ctx, u, idx) * T.value * (T.cls === 'guns' ? 1.3 : 1) * (u.str / u.max + 0.3);
+    if (tt.water) s -= 2.5;
+    let friends = 0, enemyAdj = 0;
+    for (const [, n] of map.nbrs[idx]) {
+      const o = ctx.occ[n];
+      if (!o || o === u) continue;
+      if (o.side === u.side) { if (UNIT_TYPES[o.type].cls !== 'guns') friends++; } else enemyAdj++;
+    }
+    s += P.support * Math.min(friends, 3);
+    if (T.cls === 'guns' && enemyAdj) s -= 3 * enemyAdj;
+    if (T.cls === 'guns' || T.rng[1] >= 2) {
+      let best = 0;
+      const [lo, hi] = fireRange(state, u, idx);
+      for (let d = lo; d <= hi; d++) for (const j of map.rings[idx][d]) {
+        const e = ctx.occ[j];
+        if (e && e.side !== u.side) best = Math.max(best, fireExpect(state, u, idx, e, j, false).exp * UNIT_TYPES[e.type].value);
+      }
+      s += P.fireProspect * best;
+    }
+    // objectives
+    const objs = sc.objectives;
+    const oi = map.objIdx.indexOf(idx);
+    if (ctx.mode === 'attack') {
+      let best = Infinity;
+      objs.forEach((o, k) => {
+        if (state.control[k] === u.side) return;
+        const f = costField(state, T.cls, map.objIdx[k])[idx];
+        best = Math.min(best, f / (0.7 + 0.15 * o.vp));
+      });
+      if (isFinite(best)) s -= P.pull * urgency * best * (T.cls === 'guns' ? 0.5 : 1);
+      if (oi >= 0 && T.cls === 'foot') s += (state.control[oi] === u.side ? P.garrison : P.capture) * objs[oi].vp;
+      else if (oi >= 0 && state.control[oi] !== u.side) s += P.capture * objs[oi].vp * 0.5;
+    } else {
+      let hold = Infinity, retake = Infinity;
+      objs.forEach((o, k) => {
+        const f = costField(state, T.cls, map.objIdx[k])[idx];
+        if (state.control[k] === u.side) hold = Math.min(hold, f);
+        else if (o.vp >= 2) retake = Math.min(retake, f / o.vp);
+      });
+      if (isFinite(hold)) s -= P.hold * Math.max(0, hold - P.radius);
+      if (isFinite(retake)) s -= P.retake * urgency * retake;
+      if (oi >= 0 && T.cls === 'foot') s += (state.control[oi] === u.side ? P.garrison : 3) * objs[oi].vp;
+    }
+    return s;
+  }
+
+  function attackValue(ctx, u, fromIdx, e, eIdx) {
+    const { state, P, map } = ctx;
+    const f = fireExpect(state, u, fromIdx, e, eIdx, false);
+    const dmg = Math.min(f.exp, e.str);
+    const kill = f.exp >= e.str * 0.9;
+    let back = 0;
+    if (!kill && canCounter(state, e, eIdx, fromIdx)) {
+      back = fireExpect(state, Object.assign({}, e, { str: Math.max(0.5, e.str - dmg) }), eIdx, u, fromIdx, true).exp;
+    }
+    const ve = UNIT_TYPES[e.type].value, vu = UNIT_TYPES[u.type].value;
+    let v = dmg * ve * (1 + 0.5 * dmg / Math.max(1, e.str)) + (kill ? 0.6 * e.str * ve : 0) - back * vu * P.caution;
+    const oi = map.objIdx.indexOf(eIdx);
+    if (oi >= 0 && kill) v += ctx.sc.objectives[oi].vp;
+    return v;
+  }
+
+  function aiNextAction(state) {
+    if (state.over) return null;
+    const side = state.side;
+    const ctx = aiContext(state, side);
+    let best = null;
+    const consider = (val, act) => { if (!best || val > best.val) best = Object.assign({ val }, act); };
+    for (const u of live(state, side)) {
+      if (!canMove(u) && !canFire(u)) continue;
+      const T = UNIT_TYPES[u.type], ui = idxOf(state, u);
+      const cur = posScore(ctx, u, ui);
+      const opts = [ui];
+      if (canMove(u)) {
+        const R = reachable(state, u, { occ: ctx.occ });
+        for (const [k, v] of R) if (v.end && k !== ui) opts.push(k);
+      }
+      for (const idx of opts) {
+        let ps = cur;
+        if (idx !== ui) {
+          // evaluate as if the unit stood there
+          ctx.occ[ui] = null; ctx.occ[idx] = u;
+          ps = posScore(ctx, u, idx);
+          ctx.occ[idx] = null; ctx.occ[ui] = u;
+        }
+        const mv = ps - cur;
+        if (canFire(u) && (idx === ui || !T.mof)) {
+          const [lo, hi] = fireRange(state, u, idx);
+          for (let d = lo; d <= hi; d++) for (const j of ctx.map.rings[idx][d]) {
+            const e = ctx.occ[j];
+            if (!e || e.side === side) continue;
+            consider(mv + attackValue(ctx, u, idx, e, j), { kind: 'attack', unitId: u.id, to: idx, targetId: e.id });
+          }
+        }
+        if (idx !== ui && mv > 0.15) consider(mv, { kind: 'move', unitId: u.id, to: idx });
+      }
+    }
+    if (!best || best.val <= 0.1) return null;
+    const W = scen(state).cols;
+    best.toCR = [best.to % W, (best.to / W) | 0];
+    return best;
+  }
+
+  // Applies one AI decision. Returns a list of events for the UI to animate.
+  function aiApply(state, act) {
+    const u = state.units.find(x => x.id === act.unitId);
+    const ev = [];
+    const ui = idxOf(state, u);
+    if (act.to !== ui) {
+      const m = moveUnit(state, u, act.toCR[0], act.toCR[1]);
+      if (m) ev.push({ kind: 'move', unitId: u.id, path: m.path });
+      if (act.kind === 'move') u.mp = 0; // the AI moves each unit once
+    }
+    if (act.kind === 'attack') {
+      const t = state.units.find(x => x.id === act.targetId);
+      const r = attack(state, u, t);
+      if (r) ev.push(Object.assign({ kind: 'attack' }, r));
+      else u.mp = 0;
+    }
+    if (!ev.length) u.mp = 0;
+    return ev;
+  }
+
+  function aiPlayTurn(state, limit) { // headless convenience
+    let n = 0;
+    const side = state.side;
+    while (!state.over && state.side === side && n < (limit || 200)) {
+      const a = aiNextAction(state);
+      if (!a) break;
+      aiApply(state, a);
+      n++;
+    }
+    if (!state.over && state.side === side) endSideTurn(state);
+    return n;
+  }
+
+  // ---------------------------------------------------------------- Persistence
+  function serialize(state) { const o = Object.assign({}, state); delete o.lastEvents; return JSON.stringify(o); }
+  function deserialize(json) {
+    const s = JSON.parse(json);
+    if (!s || s.v !== 1 || !SCENARIOS[s.scenarioId]) throw new Error('Unrecognised save');
+    s.lastEvents = [];
+    return s;
+  }
+
+  const api = {
+    SCENARIOS, TERRAIN, UNIT_TYPES, ELEV_NAMES, neighbour, hexDist, buildMap, newGame, live, unitAt, occupancy,
+    reachable, pathTo, moveUnit, undoMove, canMove, canFire, targetsFrom, fireRange, forecast, attack,
+    endSideTurn, vp, strength, clock, idxOf, mapOf, scen, aiNextAction, aiApply, aiPlayTurn, serialize, deserialize,
+    unitLabel, other,
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.Engine = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Wörth 1870 — interface: map rendering, touch input, cards, overlays, AI playback. */
+(function () {
+  'use strict';
+  const E = window.Engine;
+  const SC_ID = 'woerth';
+  const SAVE_KEY = 'woerth1870.save.v1', PREF_KEY = 'woerth1870.prefs.v1';
+  const sc = E.SCENARIOS[SC_ID];
+  const MAP = E.buildMap(sc);
+  const S = 30, SQ3 = Math.sqrt(3), MARGIN = 34;
+  const WORLD_W = MARGIN * 2 + S * SQ3 * (sc.cols + 0.5);
+  const WORLD_H = MARGIN * 2 + S * (1.5 * sc.rows + 0.5);
+  const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FONT_UI = '"IBM Plex Sans Condensed", "Avenir Next Condensed", "Arial Narrow", sans-serif';
+  const FONT_DISPLAY = '"Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif';
+
+  // Map palette: lithographed General Staff sheet
+  const C = {
+    margin: '#cbc4a6', frame: '#3b3125',
+    elev: ['#e3e5cf', '#dcd7bb', '#d1c8a6'],
+    woods: 'rgba(110,134,78,0.30)', tree: '#97a676', treeEdge: '#55633f',
+    vineWash: 'rgba(160,146,82,0.16)', vine: '#6d6638',
+    water: '#d2ddd8', river: '#4e7ea6', riverEdge: '#29506f',
+    roadOuter: '#5d4b35', roadInner: '#f2ecd9',
+    house: '#a5503d', houseEdge: '#5b2c21',
+    hachure: 'rgba(122,88,52,0.75)', contour: 'rgba(122,88,52,0.45)', grid: 'rgba(80,66,40,0.17)',
+    label: '#2b2219', halo: 'rgba(238,234,216,0.92)', area: '#46552f', riverLabel: '#2c5677',
+    nat: { pr: '#2b3d5b', bv: '#6a92c2', wu: '#2b3d5b', fr: '#a7372b' },
+    band: { pr: '#111111', bv: '#f3f0e6', wu: '#111111', fr: '#27408b' },
+    bandLine: { pr: '#f3f0e6', bv: '#6a92c2', wu: '#c4372d', fr: '#f3f0e6' },
+    ink: { pr: '#f3f0e6', bv: '#13213a', wu: '#f3f0e6', fr: '#f7efe6' },
+    sideCol: { de: '#2b3d5b', fr: '#a7372b' },
+    brass: '#c9a35a', reach: 'rgba(255,253,240,0.72)', reachEdge: 'rgba(150,108,36,0.95)',
+    bg: '#15191e',
+  };
+
+  // ------------------------------------------------------------ geometry
+  function center(c, r) { return [MARGIN + S * SQ3 * (c + 0.5 * (r & 1)) + S * SQ3 / 2, MARGIN + S + S * 1.5 * r]; }
+  function hexPath(ctx, x, y, s) {
+    ctx.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const a = Math.PI / 180 * (60 * k - 30);
+      const px = x + s * Math.cos(a), py = y + s * Math.sin(a);
+      k ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.closePath();
+  }
+  function corner(x, y, s, k) { const a = Math.PI / 180 * (60 * k - 30); return [x + s * Math.cos(a), y + s * Math.sin(a)]; }
+  const DIR_CORNERS = [[0, 1], [5, 0], [4, 5], [3, 4], [2, 3], [1, 2]];
+  function worldToHex(wx, wy) {
+    const x = wx - (MARGIN + S * SQ3 / 2), y = wy - (MARGIN + S);
+    const q = (SQ3 / 3 * x - y / 3) / S, r = (2 / 3 * y) / S, s = -q - r;
+    let rx = Math.round(q), rz = Math.round(r);
+    const ry = Math.round(s);
+    const dx = Math.abs(rx - q), dy = Math.abs(ry - s), dz = Math.abs(rz - r);
+    if (dx > dy && dx > dz) rx = -ry - rz;
+    else if (!(dy > dz)) rz = -rx - ry;
+    const col = rx + (rz - (rz & 1)) / 2, row = rz;
+    if (col < 0 || row < 0 || col >= sc.cols || row >= sc.rows) return null;
+    return [col, row];
+  }
+  function hash(i, k) {
+    let h = (i * 374761393 + k * 668265263) ^ 0x5bf03635;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+
+  // ------------------------------------------------------------ static map layer (cached bitmap)
+  let staticCanvas = null, staticScale = 0;
+  function buildStatic() {
+    const dpr = window.devicePixelRatio || 1;
+    staticScale = Math.min(3, Math.max(2, dpr));
+    const cv = document.createElement('canvas');
+    cv.width = Math.ceil(WORLD_W * staticScale); cv.height = Math.ceil(WORLD_H * staticScale);
+    const g = cv.getContext('2d');
+    g.scale(staticScale, staticScale);
+    g.lineJoin = 'round'; g.lineCap = 'round';
+
+    // sheet and margin
+    g.fillStyle = C.margin; g.fillRect(0, 0, WORLD_W, WORLD_H);
+    g.fillStyle = C.elev[0]; g.fillRect(MARGIN - 4, MARGIN - 4, WORLD_W - 2 * MARGIN + 8, WORLD_H - 2 * MARGIN + 8);
+
+    const N = MAP.N, W = sc.cols;
+    // base tints
+    for (let i = 0; i < N; i++) {
+      const c = i % W, r = (i / W) | 0, [x, y] = center(c, r), t = MAP.ter[i];
+      hexPath(g, x, y, S + 0.6);
+      g.fillStyle = C.elev[MAP.elev[i]]; g.fill();
+      if (t === '~' || t === 'f' || t === 'b') { g.fillStyle = C.water; g.fill(); }
+      if (t === 'w') { g.fillStyle = C.woods; g.fill(); }
+      if (t === 'g') { g.fillStyle = C.vineWash; g.fill(); }
+    }
+    // relief: contour on the edge, hachures on the higher side pointing downhill
+    for (let i = 0; i < N; i++) {
+      const c = i % W, r = (i / W) | 0, [x, y] = center(c, r);
+      for (const [d, n] of MAP.nbrs[i]) {
+        const drop = MAP.elev[i] - MAP.elev[n];
+        if (drop <= 0) continue;
+        const [k0, k1] = DIR_CORNERS[d];
+        const a = corner(x, y, S, k0), b = corner(x, y, S, k1);
+        g.strokeStyle = C.contour; g.lineWidth = 0.9;
+        g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+        g.strokeStyle = C.hachure; g.lineWidth = 0.9;
+        const len = S * (0.16 + 0.07 * drop);
+        for (let t = 0.1; t < 0.95; t += 0.1) {
+          const px = a[0] + (b[0] - a[0]) * t, py = a[1] + (b[1] - a[1]) * t;
+          let vx = x - px, vy = y - py;
+          const vl = Math.hypot(vx, vy); vx /= vl; vy /= vl;
+          const l = len * (0.75 + 0.5 * hash(i * 7 + d, Math.round(t * 10)));
+          g.beginPath(); g.moveTo(px, py); g.lineTo(px + vx * l, py + vy * l); g.stroke();
+        }
+      }
+    }
+    // woods, vineyards, villages
+    for (let i = 0; i < N; i++) {
+      const c = i % W, r = (i / W) | 0, [x, y] = center(c, r), t = MAP.ter[i];
+      if (t === 'w') {
+        for (let k = 0; k < 9; k++) {
+          const ang = hash(i, k) * Math.PI * 2, rad = Math.sqrt(hash(i, k + 31)) * S * 0.74;
+          const px = x + Math.cos(ang) * rad, py = y + Math.sin(ang) * rad * 0.92;
+          const tr = S * (0.1 + 0.035 * hash(i, k + 60));
+          g.fillStyle = C.tree; g.strokeStyle = C.treeEdge; g.lineWidth = 0.8;
+          g.beginPath(); g.arc(px, py, tr, 0, Math.PI * 2); g.fill(); g.stroke();
+          g.beginPath(); g.moveTo(px, py + tr); g.lineTo(px, py + tr + 2.2); g.stroke();
+        }
+      } else if (t === 'g') {
+        g.strokeStyle = C.vine; g.lineWidth = 0.9;
+        for (let row = -2; row <= 2; row++) for (let col = -2; col <= 2; col++) {
+          const px = x + col * S * 0.3 + (row & 1) * S * 0.15, py = y + row * S * 0.28;
+          if (Math.hypot(px - x, py - y) > S * 0.72) continue;
+          g.beginPath(); g.moveTo(px - 2, py - 2); g.lineTo(px, py + 1.5); g.lineTo(px + 2, py - 2); g.stroke();
+        }
+      } else if (t === 'v') {
+        const n = 6 + Math.floor(hash(i, 3) * 3);
+        for (let k = 0; k < n; k++) {
+          const ang = (k / n) * Math.PI * 2 + hash(i, k) * 0.6, rad = S * (0.2 + 0.32 * hash(i, k + 9));
+          const px = x + Math.cos(ang) * rad, py = y + Math.sin(ang) * rad * 0.85;
+          const w = S * (0.17 + 0.1 * hash(i, k + 17)), h = S * (0.12 + 0.07 * hash(i, k + 23));
+          g.save(); g.translate(px, py); g.rotate((hash(i, k + 40) - 0.5) * 0.9);
+          g.fillStyle = C.house; g.strokeStyle = C.houseEdge; g.lineWidth = 0.8;
+          g.fillRect(-w / 2, -h / 2, w, h); g.strokeRect(-w / 2, -h / 2, w, h);
+          g.restore();
+        }
+        // church
+        g.strokeStyle = C.frame; g.lineWidth = 1.2; g.fillStyle = C.frame;
+        g.beginPath(); g.arc(x, y, 2.2, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.moveTo(x, y - 2); g.lineTo(x, y - 8); g.moveTo(x - 2.6, y - 5.8); g.lineTo(x + 2.6, y - 5.8); g.stroke();
+      }
+    }
+    // river
+    const pts = sc.river.map(([c, r]) => center(c, r));
+    const riverStroke = (w, col) => {
+      g.strokeStyle = col; g.lineWidth = w;
+      g.beginPath(); g.moveTo(pts[0][0], pts[0][1] - S);
+      for (let k = 0; k < pts.length - 1; k++) {
+        const mx = (pts[k][0] + pts[k + 1][0]) / 2, my = (pts[k][1] + pts[k + 1][1]) / 2;
+        g.quadraticCurveTo(pts[k][0], pts[k][1], mx, my);
+      }
+      const last = pts[pts.length - 1];
+      g.quadraticCurveTo(last[0], last[1], last[0], last[1] + S);
+      g.stroke();
+    };
+    riverStroke(S * 0.36 + 2, C.riverEdge);
+    riverStroke(S * 0.36, C.river);
+    // roads (double line)
+    const roadStroke = (w, col) => {
+      g.strokeStyle = col; g.lineWidth = w;
+      for (const road of sc.roads) {
+        g.beginPath();
+        road.forEach(([c, r], k) => { const [x, y] = center(c, r); k ? g.lineTo(x, y) : g.moveTo(x, y); });
+        g.stroke();
+      }
+    };
+    roadStroke(3.6, C.roadOuter);
+    roadStroke(1.8, C.roadInner);
+    // map-edge road exits
+    g.fillStyle = C.label; g.font = 'italic 500 8.5px ' + FONT_DISPLAY; g.textAlign = 'center';
+    const exits = [[[0, 6], 'W', 'Niederbronn ←'], [[15, 6], 'E', '→ Sulz'], [[7, 0], 'N', '↑ Lembach'], [[7, 17], 'S', '↓ Haguenau'], [[15, 12], 'E', '→ Surbourg']];
+    for (const [[c, r], d, txt] of exits) {
+      const [x, y] = center(c, r);
+      g.save();
+      if (d === 'W') { g.translate(MARGIN - 9, y); g.rotate(-Math.PI / 2); g.fillText(txt, 0, 0); }
+      else if (d === 'E') { g.translate(WORLD_W - MARGIN + 13, y); g.rotate(Math.PI / 2); g.fillText(txt, 0, 0); }
+      else if (d === 'N') { g.fillText(txt, x, MARGIN - 8); }
+      else g.fillText(txt, x, WORLD_H - MARGIN + 15);
+      g.restore();
+    }
+    // bridges and ford
+    for (let i = 0; i < N; i++) {
+      const t = MAP.ter[i];
+      if (t !== 'b' && t !== 'f') continue;
+      const [x, y] = center(i % W, (i / W) | 0);
+      g.strokeStyle = C.frame; g.lineWidth = 1.3;
+      if (t === 'b') {
+        for (const s of [-1, 1]) {
+          g.beginPath(); g.moveTo(x - S * 0.42, y + s * 4.2 - s * 1.5); g.lineTo(x - S * 0.32, y + s * 4.2);
+          g.lineTo(x + S * 0.32, y + s * 4.2); g.lineTo(x + S * 0.42, y + s * 4.2 - s * 1.5); g.stroke();
+        }
+      } else {
+        g.setLineDash([2.2, 2.4]); g.strokeStyle = C.roadOuter; g.lineWidth = 1.6;
+        g.beginPath(); g.moveTo(x - S * 0.75, y); g.lineTo(x + S * 0.75, y); g.stroke(); g.setLineDash([]);
+        g.fillStyle = C.riverLabel; g.font = 'italic 600 7.5px ' + FONT_DISPLAY; g.textAlign = 'center';
+        g.fillText('Furt', x, y - 6);
+      }
+    }
+    // hex grid
+    g.strokeStyle = C.grid; g.lineWidth = 0.6;
+    for (let i = 0; i < N; i++) { const [x, y] = center(i % W, (i / W) | 0); hexPath(g, x, y, S); g.stroke(); }
+
+    // area and river labels
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (const a of sc.areaLabels) {
+      const x = MARGIN + S * SQ3 * (a.c + 0.5) , y = MARGIN + S + S * 1.5 * a.r;
+      g.save(); g.translate(x, y);
+      if (a.river) { g.rotate(Math.PI / 2); g.fillStyle = C.riverLabel; g.font = 'italic 600 12px ' + FONT_DISPLAY; }
+      else { g.fillStyle = C.area; g.font = 'italic 600 13px ' + FONT_DISPLAY; }
+      const txt = a.name.split('').join(String.fromCharCode(8202));
+      g.strokeStyle = C.halo; g.lineWidth = 3; g.strokeText(txt, 0, 0); g.fillText(txt, 0, 0);
+      g.restore();
+    }
+    // place names
+    for (const p of sc.places) {
+      const [x, y] = center(p.c, p.r);
+      const big = sc.objectives.some(o => o.c === p.c && o.r === p.r && o.vp >= 2);
+      g.font = (big ? '600 9.6px ' : '600 8.6px ') + FONT_UI;
+      const txt = p.name.toUpperCase().split('').join(String.fromCharCode(8202));
+      let ty = y + S * 0.74;
+      let tx = x;
+      if (p.c === 0) { g.textAlign = 'left'; tx = x - S * 0.7; }
+      else if (p.c === sc.cols - 1) { g.textAlign = 'right'; tx = x + S * 0.7; }
+      else g.textAlign = 'center';
+      g.strokeStyle = C.halo; g.lineWidth = 3; g.strokeText(txt, tx, ty);
+      g.fillStyle = C.label; g.fillText(txt, tx, ty);
+    }
+    // neat-line frame with graduation bars
+    const x0 = MARGIN - 8, y0 = MARGIN - 8, x1 = WORLD_W - MARGIN + 8, y1 = WORLD_H - MARGIN + 8;
+    g.strokeStyle = C.frame; g.lineWidth = 1.4; g.strokeRect(x0, y0, x1 - x0, y1 - y0);
+    g.lineWidth = 0.6; g.strokeRect(x0 - 4, y0 - 4, x1 - x0 + 8, y1 - y0 + 8);
+    g.fillStyle = C.frame;
+    const step = S * SQ3 / 2;
+    for (let x = x0, k = 0; x < x1; x += step, k++) if (k % 2 === 0) { g.fillRect(x, y0 - 4, Math.min(step, x1 - x), 4); g.fillRect(x, y1, Math.min(step, x1 - x), 4); }
+    for (let y = y0, k = 0; y < y1; y += S * 1.5, k++) if (k % 2 === 0) { g.fillRect(x0 - 4, y, 4, Math.min(S * 1.5, y1 - y)); g.fillRect(x1, y, 4, Math.min(S * 1.5, y1 - y)); }
+    // title, north arrow, scale bar in the margin
+    g.textBaseline = 'alphabetic'; g.textAlign = 'left';
+    g.fillStyle = C.frame; g.font = 'italic 600 11px ' + FONT_DISPLAY;
+    g.fillText('Schlachtfeld von Wörth · 6. August 1870', x0, y0 - 9);
+    g.textAlign = 'right'; g.font = '500 8px ' + FONT_UI;
+    g.fillText('ONE HEX ≈ 600 M', x1, y0 - 9);
+    // scale bar
+    const km = (1000 / sc.hexMetres) * S * SQ3;
+    const sx = x0, sy = y1 + 13;
+    for (let k = 0; k < 4; k++) {
+      g.fillStyle = k % 2 ? C.margin : C.frame;
+      g.fillRect(sx + k * km / 2, sy, km / 2, 3.5);
+    }
+    g.strokeStyle = C.frame; g.lineWidth = 0.7; g.strokeRect(sx, sy, km * 2, 3.5);
+    g.fillStyle = C.frame; g.font = '500 7.5px ' + FONT_UI; g.textAlign = 'center';
+    g.fillText('0', sx, sy + 12); g.fillText('1 km', sx + km, sy + 12); g.fillText('2 km', sx + km * 2, sy + 12);
+    // north arrow
+    const nx = x1 - 10, ny = y1 + 16;
+    g.beginPath(); g.moveTo(nx, ny - 9); g.lineTo(nx + 4, ny + 2); g.lineTo(nx, ny - 1); g.lineTo(nx - 4, ny + 2); g.closePath(); g.fill();
+    g.font = '600 8px ' + FONT_UI; g.fillText('N', nx - 12, ny + 1);
+    staticCanvas = cv;
+  }
+
+  // ------------------------------------------------------------ DOM refs and state
+  const $ = id => document.getElementById(id);
+  const canvas = $('map'), ctx = canvas.getContext('2d');
+  const cardEl = $('card'), actionsEl = $('actions'), overlayEl = $('overlay'), toastEl = $('toast');
+  const G = {
+    state: null, sel: null, reach: null, targets: [], pending: null, inspect: null,
+    busy: false, ai: false, fastThisTurn: false, confirmEnd: false, trails: [], effects: [], moving: null, ghosts: [],
+    prefs: { fast: false },
+  };
+  const cam = { x: 0, y: 0, z: 1 };
+  let viewW = 0, viewH = 0, dpr = 1;
+
+  function loadPrefs() { try { const p = JSON.parse(localStorage.getItem(PREF_KEY) || '{}'); if (p && typeof p === 'object') Object.assign(G.prefs, p); } catch (e) { /* storage unavailable */ } }
+  function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify(G.prefs)); } catch (e) { /* ignore */ } }
+  function save() { if (!G.state) return; try { localStorage.setItem(SAVE_KEY, E.serialize(G.state)); } catch (e) { /* ignore */ } }
+  function loadSave() { try { const j = localStorage.getItem(SAVE_KEY); return j ? E.deserialize(j) : null; } catch (e) { return null; } }
+  function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } }
+
+  const unitById = id => G.state && G.state.units.find(u => u.id === id);
+  const selUnit = () => (G.sel ? unitById(G.sel) : null);
+  const humanTurn = () => G.state && !G.state.over && G.state.players[G.state.side] === 'human';
+  const bothHuman = () => G.state && G.state.players.de === 'human' && G.state.players.fr === 'human';
+  const speed = () => (REDUCED ? 0.25 : (G.prefs.fast || G.fastThisTurn) ? 0.4 : 1);
+  const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+  // ------------------------------------------------------------ camera
+  function zLimits() {
+    const fit = Math.min(viewW / WORLD_W, viewH / WORLD_H);
+    return [Math.min(fit, 1), 2.4];
+  }
+  function clampCam() {
+    const [zmin, zmax] = zLimits();
+    cam.z = Math.min(zmax, Math.max(zmin, cam.z));
+    const vw = viewW / cam.z, vh = viewH / cam.z;
+    if (vw >= WORLD_W) cam.x = (WORLD_W - vw) / 2; else cam.x = Math.min(Math.max(cam.x, -12), WORLD_W - vw + 12);
+    if (vh >= WORLD_H) cam.y = (WORLD_H - vh) / 2; else cam.y = Math.min(Math.max(cam.y, -12), WORLD_H - vh + 12);
+  }
+  function defaultZoom() {
+    const z = Math.min(viewW / (S * SQ3 * 8.5), viewH / (S * 1.5 * 8));
+    return Math.max(zLimits()[0], Math.min(1.35, z));
+  }
+  function centerOn(wx, wy, z) {
+    if (z) cam.z = z;
+    cam.x = wx - viewW / cam.z / 2; cam.y = wy - viewH / cam.z / 2;
+    clampCam(); requestDraw();
+  }
+  let camAnim = null;
+  function panTo(wx, wy, ms, z) {
+    const from = { x: cam.x, y: cam.y, z: cam.z };
+    const tz = z || cam.z;
+    const tx = wx - viewW / tz / 2, ty = wy - viewH / tz / 2;
+    const to = { x: tx, y: ty, z: tz };
+    const save = { ...cam }; Object.assign(cam, to); clampCam(); Object.assign(to, { x: cam.x, y: cam.y, z: cam.z }); Object.assign(cam, save);
+    if (!ms || REDUCED) { Object.assign(cam, to); requestDraw(); return Promise.resolve(); }
+    return new Promise(res => {
+      const t0 = performance.now();
+      camAnim = () => {
+        const k = Math.min(1, (performance.now() - t0) / ms), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        cam.x = from.x + (to.x - from.x) * e; cam.y = from.y + (to.y - from.y) * e; cam.z = from.z + (to.z - from.z) * e;
+        if (k >= 1) { camAnim = null; res(); }
+      };
+      requestDraw();
+    });
+  }
+  function inView(wx, wy, frac) {
+    const sx = (wx - cam.x) * cam.z, sy = (wy - cam.y) * cam.z;
+    const mx = viewW * (1 - frac) / 2, my = viewH * (1 - frac) / 2;
+    return sx > mx && sx < viewW - mx && sy > my && sy < viewH - my;
+  }
+  async function follow(c, r) {
+    const [x, y] = center(c, r);
+    if (!inView(x, y, 0.7)) await panTo(x, y, 260 * speed());
+  }
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const first = viewW === 0;
+    viewW = Math.max(1, rect.width); viewH = Math.max(1, rect.height);
+    dpr = Math.min(3, window.devicePixelRatio || 1);
+    canvas.width = Math.round(viewW * dpr); canvas.height = Math.round(viewH * dpr);
+    if (first) { cam.z = defaultZoom(); centerOn(WORLD_W * 0.5, WORLD_H * 0.42); }
+    clampCam(); requestDraw();
+  }
+
+  // ------------------------------------------------------------ drawing
+  let drawQueued = false;
+  function requestDraw() { if (!drawQueued) { drawQueued = true; requestAnimationFrame(frame); } }
+  function frame(now) {
+    drawQueued = false;
+    if (camAnim) camAnim();
+    draw(now);
+    if (camAnim || G.moving || G.effects.length || G.ghosts.length) requestDraw();
+  }
+
+  function draw(now) {
+    now = now || performance.now();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = C.bg; ctx.fillRect(0, 0, viewW, viewH);
+    if (!staticCanvas) return;
+    ctx.save();
+    ctx.scale(cam.z, cam.z); ctx.translate(-cam.x, -cam.y);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(staticCanvas, 0, 0, WORLD_W, WORLD_H);
+    if (!G.state) { ctx.restore(); return; }
+    drawObjectives();
+    drawTrails();
+    drawHighlights(now);
+    drawUnits();
+    drawEffects(now);
+    ctx.restore();
+  }
+
+  function drawObjectives() {
+    const st = G.state;
+    sc.objectives.forEach((o, k) => {
+      const [x, y] = center(o.c, o.r);
+      const owner = st.control[k];
+      const px = x + S * 0.5, py = y - S * 0.5;
+      ctx.strokeStyle = C.frame; ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.moveTo(px, py + 9); ctx.lineTo(px, py - 11); ctx.stroke();
+      ctx.fillStyle = C.sideCol[owner];
+      ctx.beginPath(); ctx.moveTo(px, py - 11); ctx.lineTo(px + 14, py - 7.5); ctx.lineTo(px, py - 4); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 0.6; ctx.stroke();
+      // VP medallion
+      ctx.fillStyle = '#f2ecd9'; ctx.strokeStyle = C.frame; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(px, py + 11, 5.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = C.frame; ctx.font = '700 8px ' + FONT_UI; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(o.vp), px, py + 11.4);
+    });
+  }
+
+  function drawTrails() {
+    for (const t of G.trails) {
+      if (t.pts.length < 2) continue;
+      ctx.strokeStyle = C.sideCol[t.side]; ctx.globalAlpha = 0.55; ctx.lineWidth = 2.2; ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      t.pts.forEach(([c, r], k) => { const [x, y] = center(c, r); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+      ctx.stroke(); ctx.setLineDash([]);
+      const [ax, ay] = center(...t.pts[t.pts.length - 2]), [bx, by] = center(...t.pts[t.pts.length - 1]);
+      const ang = Math.atan2(by - ay, bx - ax), hx = bx - Math.cos(ang) * S * 0.62, hy = by - Math.sin(ang) * S * 0.62;
+      ctx.fillStyle = C.sideCol[t.side];
+      ctx.beginPath(); ctx.moveTo(hx, hy);
+      ctx.lineTo(hx - Math.cos(ang - 0.5) * 8, hy - Math.sin(ang - 0.5) * 8);
+      ctx.lineTo(hx - Math.cos(ang + 0.5) * 8, hy - Math.sin(ang + 0.5) * 8); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawHighlights(now) {
+    const st = G.state, W = sc.cols;
+    const u = selUnit();
+    if (G.reach && u) {
+      const ui = E.idxOf(st, u);
+      for (const [k, v] of G.reach) {
+        if (k === ui || !v.end) continue;
+        const [x, y] = center(k % W, (k / W) | 0);
+        hexPath(ctx, x, y, S - 2.2);
+        ctx.fillStyle = C.reach; ctx.fill();
+        ctx.strokeStyle = C.reachEdge; ctx.lineWidth = 1.5; ctx.stroke();
+        if (v.stop) { ctx.fillStyle = C.reachEdge; ctx.beginPath(); ctx.arc(x, y + S * 0.55, 1.8, 0, Math.PI * 2); ctx.fill(); }
+      }
+    }
+    for (const t of G.targets) {
+      const [x, y] = center(t.c, t.r);
+      const pend = G.pending === t.id;
+      const pulse = pend ? 1 + 0.06 * Math.sin(now / 160) : 1;
+      const rr = S * 0.86 * pulse;
+      ctx.lineWidth = pend ? 4 : 3; ctx.strokeStyle = '#1a1a1a';
+      ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = pend ? 2.4 : 1.8; ctx.strokeStyle = pend ? C.brass : '#fffdf5';
+      ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.stroke();
+      for (let k = 0; k < 4; k++) {
+        const a = k * Math.PI / 2;
+        ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * (rr - 5), y + Math.sin(a) * (rr - 5)); ctx.lineTo(x + Math.cos(a) * (rr + 5), y + Math.sin(a) * (rr + 5)); ctx.stroke();
+      }
+    }
+    if (G.pending) requestDraw();
+    if (u) {
+      const [x, y] = center(u.c, u.r);
+      hexPath(ctx, x, y, S - 0.5);
+      ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 5; ctx.stroke();
+      ctx.strokeStyle = C.brass; ctx.lineWidth = 3; ctx.stroke();
+    }
+    if (G.inspect) {
+      const [x, y] = center(G.inspect[0], G.inspect[1]);
+      hexPath(ctx, x, y, S - 1);
+      ctx.setLineDash([4, 3]); ctx.strokeStyle = C.frame; ctx.lineWidth = 1.6; ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+
+  function unitDrawPos(u) {
+    if (G.moving && G.moving.id === u.id) return G.moving.pos;
+    return center(u.c, u.r);
+  }
+
+  function drawCounter(u, x, y, alpha) {
+    const T = E.UNIT_TYPES[u.type];
+    const w = S * 1.22, h = S * 0.94, rx = x - w / 2, ry = y - h / 2;
+    ctx.save();
+    ctx.globalAlpha = alpha == null ? 1 : alpha;
+    // shadow
+    ctx.fillStyle = 'rgba(30,22,10,0.35)';
+    roundRect(rx + 1.6, ry + 2, w, h, 3.5); ctx.fill();
+    ctx.fillStyle = C.nat[u.nat];
+    roundRect(rx, ry, w, h, 3.5); ctx.fill();
+    // national band
+    ctx.save(); roundRect(rx, ry, w, h, 3.5); ctx.clip();
+    ctx.fillStyle = C.band[u.nat]; ctx.fillRect(rx, ry, w, h * 0.17);
+    ctx.fillStyle = C.bandLine[u.nat]; ctx.fillRect(rx, ry + h * 0.17, w, 1.1);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 0.9; roundRect(rx, ry, w, h, 3.5); ctx.stroke();
+    // NATO-style symbol
+    const ink = C.ink[u.nat];
+    const bw = w * 0.44, bh = h * 0.42, bx = rx + w * 0.1, by = ry + h * 0.3;
+    ctx.strokeStyle = ink; ctx.fillStyle = ink; ctx.lineWidth = 1.2;
+    ctx.strokeRect(bx, by, bw, bh);
+    ctx.beginPath();
+    if (T.sym === 'inf' || T.sym === 'jaeger') { ctx.moveTo(bx, by); ctx.lineTo(bx + bw, by + bh); ctx.moveTo(bx + bw, by); ctx.lineTo(bx, by + bh); }
+    if (T.sym === 'cav') { ctx.moveTo(bx, by + bh); ctx.lineTo(bx + bw, by); }
+    ctx.stroke();
+    if (T.sym === 'jaeger') { ctx.beginPath(); ctx.arc(bx + bw / 2, by - 0.5, 3, Math.PI, 0); ctx.stroke(); }
+    if (T.sym === 'art') { ctx.beginPath(); ctx.arc(bx + bw / 2, by + bh / 2, 2.6, 0, Math.PI * 2); ctx.fill(); }
+    if (T.sym === 'mg') {
+      ctx.beginPath(); ctx.arc(bx + bw / 2, by + bh / 2, 2.1, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(bx + bw * 0.2, by + bh * 0.25); ctx.lineTo(bx + bw * 0.2, by + bh * 0.75); ctx.moveTo(bx + bw * 0.8, by + bh * 0.25); ctx.lineTo(bx + bw * 0.8, by + bh * 0.75); ctx.stroke();
+    }
+    // strength
+    ctx.fillStyle = u.str <= 3 ? (u.nat === 'bv' ? '#7a1408' : '#ffcf7a') : ink;
+    ctx.font = '700 14px ' + FONT_UI; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(u.str), rx + w * 0.78, ry + h * 0.53);
+    if (cam.z >= 0.85) {
+      ctx.font = '600 6.6px ' + FONT_UI; ctx.fillStyle = ink; ctx.textAlign = 'left';
+      ctx.fillText(u.short, bx, ry + h * 0.86);
+    }
+    ctx.restore();
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  function drawUnits() {
+    const st = G.state;
+    const human = humanTurn();
+    for (const u of st.units) {
+      if (!u.on || u.dead) continue;
+      const [x, y] = unitDrawPos(u);
+      let alpha = 1;
+      if (human && u.side === st.side && !E.canMove(u) && !E.canFire(u)) alpha = 0.55;
+      drawCounter(u, x, y, alpha);
+      if (human && u.side === st.side && alpha === 1 && !u.moved) {
+        ctx.fillStyle = C.brass; ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.arc(x + S * 0.5, y - S * 0.36, 2.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+    }
+    for (const gh of G.ghosts) {
+      const u = gh.u, [x, y] = center(u.c, u.r);
+      drawCounter(u, x, y, Math.min(1, Math.max(0, 1 - (performance.now() - gh.t0) / gh.dur)));
+    }
+    G.ghosts = G.ghosts.filter(gh => performance.now() - gh.t0 < gh.dur);
+  }
+
+  function drawEffects(now) {
+    G.effects = G.effects.filter(f => now - f.t0 < f.dur);
+    for (const f of G.effects) {
+      if (now < f.t0) continue;
+      const k = (now - f.t0) / f.dur;
+      if (f.kind === 'flash') {
+        const r = S * (0.25 + 0.5 * k);
+        const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r);
+        g.addColorStop(0, `rgba(255,236,170,${0.95 * (1 - k)})`); g.addColorStop(1, 'rgba(255,170,60,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, Math.PI * 2); ctx.fill();
+      } else if (f.kind === 'smoke') {
+        for (let n = 0; n < 5; n++) {
+          const a = f.seed + n * 1.3, d = S * (0.15 + 0.5 * k) * (0.6 + 0.4 * ((n * 37) % 7) / 7);
+          ctx.fillStyle = `rgba(235,232,222,${0.55 * (1 - k)})`;
+          ctx.beginPath(); ctx.arc(f.x + Math.cos(a) * d, f.y + Math.sin(a) * d - k * 8, S * (0.12 + 0.22 * k), 0, Math.PI * 2); ctx.fill();
+        }
+      } else if (f.kind === 'float') {
+        ctx.font = '700 15px ' + FONT_UI; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const y = f.y - k * 22;
+        ctx.globalAlpha = k < 0.75 ? 1 : (1 - k) / 0.25;
+        ctx.lineWidth = 3.5; ctx.strokeStyle = '#f4efe0'; ctx.strokeText(f.text, f.x, y);
+        ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, y);
+        ctx.globalAlpha = 1;
+      } else if (f.kind === 'hit') {
+        hexPath(ctx, f.x, f.y, S - 1);
+        ctx.fillStyle = `rgba(214,70,40,${0.35 * (1 - k)})`; ctx.fill();
+      }
+    }
+  }
+
+  // ------------------------------------------------------------ animations
+  function animMove(u, path) {
+    if (path.length < 2) return Promise.resolve();
+    const per = 115 * speed();
+    const pts = path.map(([c, r]) => center(c, r));
+    return new Promise(res => {
+      const t0 = performance.now(), dur = per * (pts.length - 1);
+      G.moving = { id: u.id, pos: pts[0], tick: null };
+      const step = () => {
+        const k = Math.min(1, (performance.now() - t0) / dur);
+        const f = k * (pts.length - 1), i = Math.min(pts.length - 2, Math.floor(f)), t = f - i;
+        G.moving.pos = [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * t, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * t];
+        requestDraw();
+        if (k < 1) requestAnimationFrame(step); else { G.moving = null; requestDraw(); res(); }
+      };
+      requestAnimationFrame(step);
+    });
+  }
+
+  async function animAttack(ev) {
+    const sp = speed();
+    const [ax, ay] = center(ev.from[0], ev.from[1]), [tx, ty] = center(ev.to[0], ev.to[1]);
+    const now = performance.now();
+    G.effects.push({ kind: 'flash', x: ax, y: ay, t0: now, dur: 260 * sp });
+    G.effects.push({ kind: 'smoke', x: ax, y: ay, t0: now, dur: 900 * sp, seed: Math.random() * 6 });
+    requestDraw();
+    await sleep(180 * sp);
+    const t2 = performance.now();
+    G.effects.push({ kind: 'hit', x: tx, y: ty, t0: t2, dur: 420 * sp });
+    G.effects.push({ kind: 'float', x: tx, y: ty - S * 0.3, t0: t2, dur: 1000 * Math.max(sp, 0.6), text: ev.dmg ? '−' + ev.dmg : 'miss', color: '#9b1d10' });
+    if (ev.countered) {
+      G.effects.push({ kind: 'flash', x: tx, y: ty, t0: t2 + 120 * sp, dur: 220 * sp });
+      G.effects.push({ kind: 'float', x: ax, y: ay - S * 0.3, t0: t2 + 160 * sp, dur: 1000 * Math.max(sp, 0.6), text: ev.back ? '−' + ev.back : '0', color: '#9b1d10' });
+    }
+    if (ev.killed) { const t = unitById(ev.targetId); if (t) G.ghosts.push({ u: t, t0: t2 + 200 * sp, dur: 700 * sp }); }
+    if (ev.lost) { const a = unitById(ev.attackerId); if (a) G.ghosts.push({ u: a, t0: t2 + 300 * sp, dur: 700 * sp }); }
+    requestDraw();
+    await sleep(520 * sp);
+  }
+
+  // ------------------------------------------------------------ selection and actions
+  function refreshSel() {
+    const st = G.state, u = selUnit();
+    G.reach = null; G.targets = [];
+    if (!u || u.dead || !u.on) { G.sel = null; return; }
+    if (humanTurn() && u.side === st.side) {
+      if (E.canMove(u)) G.reach = E.reachable(st, u);
+      if (E.canFire(u)) G.targets = E.targetsFrom(st, u, E.idxOf(st, u));
+    }
+    if (G.pending && !G.targets.some(t => t.id === G.pending)) G.pending = null;
+  }
+
+  function select(id) {
+    G.sel = id; G.inspect = null; G.pending = null; G.trails = []; G.confirmEnd = false;
+    refreshSel(); renderCard(); requestDraw();
+  }
+
+  function onTap(sx, sy) {
+    const wx = sx / cam.z + cam.x, wy = sy / cam.z + cam.y;
+    const h = worldToHex(wx, wy);
+    if (!h || !G.state || G.busy) return;
+    const st = G.state;
+    const u = E.unitAt(st, h[0], h[1]);
+    const sel = selUnit();
+    G.confirmEnd = false;
+    if (humanTurn() && sel && sel.side === st.side) {
+      if (u && u.side !== st.side && G.targets.includes(u)) {
+        if (G.pending === u.id) { doAttack(sel, u); return; }
+        G.pending = u.id; G.trails = []; renderCard(); requestDraw(); return;
+      }
+      const idx = h[1] * sc.cols + h[0];
+      if (!u && G.reach && G.reach.has(idx) && G.reach.get(idx).end && idx !== E.idxOf(st, sel)) { doMove(sel, h); return; }
+    }
+    if (u) { if (G.sel === u.id && !G.pending) { G.sel = null; G.inspect = null; refreshSel(); renderCard(); requestDraw(); return; } select(u.id); return; }
+    G.sel = null; G.pending = null; G.inspect = h; G.trails = [];
+    refreshSel(); renderCard(); requestDraw();
+  }
+
+  async function doMove(u, h) {
+    const before = G.state.control.slice();
+    const res = E.moveUnit(G.state, u, h[0], h[1]);
+    if (!res) return;
+    G.busy = true; G.pending = null; G.reach = null; G.targets = []; renderCard();
+    await animMove(u, res.path);
+    G.busy = false;
+    announceCaptures(before);
+    save(); refreshSel(); renderCard(); requestDraw();
+    if (res.stop && !G.targets.length) toast('Halted by enemy contact.');
+  }
+
+  async function doAttack(u, t) {
+    const res = E.attack(G.state, u, t);
+    if (!res) return;
+    G.busy = true; G.pending = null; G.reach = null; G.targets = []; renderCard();
+    await animAttack(res);
+    G.busy = false;
+    if (res.killed) toast(E.unitLabel(t) + ' is broken.');
+    else if (res.lost) toast(E.unitLabel(u) + ' is broken.');
+    save(); refreshSel(); renderCard(); requestDraw(); updateBar();
+    if (G.state.over) showResult();
+  }
+
+  function announceCaptures(before) {
+    sc.objectives.forEach((o, k) => {
+      if (before[k] !== G.state.control[k]) toast(o.name + ' taken by the ' + sc.sides[G.state.control[k]].short + ' (' + o.vp + ' VP).');
+    });
+  }
+
+  function readyUnits() {
+    const st = G.state;
+    return E.live(st, st.side).filter(u => E.canMove(u) || (E.canFire(u) && E.targetsFrom(st, u, E.idxOf(st, u)).length))
+      .filter(u => !(u.moved && !E.canFire(u) && u.mp < 0.75));
+  }
+  function freshUnits() { return E.live(G.state, G.state.side).filter(u => !u.moved && !u.fired); }
+
+  function nextUnit() {
+    const list = readyUnits().sort((a, b) => a.r - b.r || a.c - b.c);
+    if (!list.length) { toast('No units left to act. End the turn when ready.'); return; }
+    const i = list.findIndex(u => u.id === G.sel);
+    const u = list[(i + 1) % list.length];
+    select(u.id);
+    const [x, y] = center(u.c, u.r);
+    if (!inView(x, y, 0.6)) panTo(x, y, 280);
+  }
+
+  function undo() {
+    if (E.undoMove(G.state)) { save(); refreshSel(); renderCard(); requestDraw(); toast('Move taken back.'); }
+  }
+
+  function endTurn() {
+    if (!humanTurn() || G.busy) return;
+    const left = freshUnits().length;
+    if (left && !G.confirmEnd) {
+      G.confirmEnd = true; renderCard();
+      clearTimeout(endTurn.t); endTurn.t = setTimeout(() => { G.confirmEnd = false; renderCard(); }, 4000);
+      return;
+    }
+    G.confirmEnd = false; G.sel = null; G.pending = null; G.inspect = null; G.reach = null; G.targets = [];
+    E.endSideTurn(G.state);
+    save();
+    afterTurnChange();
+  }
+
+  function afterTurnChange() {
+    G.fastThisTurn = false;
+    updateBar(); refreshSel(); renderCard(); requestDraw();
+    const st = G.state;
+    if (st.over) { showResult(); return; }
+    if (st.players[st.side] === 'ai') { runAI(); return; }
+    if (bothHuman()) showHandover(); else announceTurn();
+  }
+
+  function announceTurn() {
+    const st = G.state;
+    const arr = (st.arrivals || []).map(id => unitById(id)).filter(Boolean);
+    let msg = 'Turn ' + st.turn + ' · ' + E.clock(st) + '. ' + sc.sides[st.side].short + ' to move.';
+    if (arr.length) msg += ' Arriving: ' + arr.map(u => u.short).join(', ') + '.';
+    toast(msg, 3200);
+    const mine = E.live(st, st.side);
+    if (arr.length) { const [x, y] = center(arr[0].c, arr[0].r); panTo(x, y, 400); }
+    else if (mine.length && G.trails.length === 0) {
+      let sx = 0, sy = 0; mine.forEach(u => { const p = center(u.c, u.r); sx += p[0]; sy += p[1]; });
+      const cx = sx / mine.length, cy = sy / mine.length;
+      if (!inView(cx, cy, 0.5)) panTo(cx, cy, 400);
+    }
+  }
+
+  async function runAI() {
+    const st = G.state, side = st.side;
+    G.busy = true; G.ai = true; G.trails = [];
+    updateBar(); renderCard(); requestDraw();
+    await sleep(350 * speed());
+    let guard = 0;
+    while (!st.over && st.side === side && guard++ < 240) {
+      const act = E.aiNextAction(st);
+      if (!act) break;
+      const u = unitById(act.unitId);
+      await follow(u.c, u.r);
+      const before = st.control.slice();
+      const evs = E.aiApply(st, act);
+      for (const ev of evs) {
+        if (ev.kind === 'move') {
+          G.trails.push({ side, pts: ev.path });
+          await animMove(unitById(ev.unitId), ev.path);
+        } else if (ev.kind === 'attack') {
+          await follow(ev.to[0], ev.to[1]);
+          await animAttack(ev);
+        }
+      }
+      announceCaptures(before);
+      renderCard(); updateBar();
+      await sleep(70 * speed());
+    }
+    if (!st.over && st.side === side) E.endSideTurn(st);
+    save();
+    G.busy = false; G.ai = false;
+    afterTurnChange();
+  }
+
+  // ------------------------------------------------------------ cards
+  function esc(s) { return String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
+  function counterSVG(u) {
+    const T = E.UNIT_TYPES[u.type];
+    const fill = { pr: 'var(--prussian)', bv: 'var(--bavaria)', wu: 'var(--prussian)', fr: 'var(--garance)' }[u.nat];
+    const band = { pr: 'var(--flag-black)', bv: 'var(--flag-white)', wu: 'var(--flag-black)', fr: 'var(--tricolour-blue)' }[u.nat];
+    const ink = u.nat === 'bv' ? 'var(--ink)' : 'var(--flag-white)';
+    let sym = '';
+    if (T.sym === 'inf' || T.sym === 'jaeger') sym = '<path d="M5 12 L21 24 M21 12 L5 24"/>';
+    if (T.sym === 'cav') sym = '<path d="M5 24 L21 12"/>';
+    if (T.sym === 'jaeger') sym += '<path d="M10 11 A3 3 0 0 1 16 11"/>';
+    if (T.sym === 'art') sym = '<circle cx="13" cy="18" r="2.6" style="fill:' + ink + '"/>';
+    if (T.sym === 'mg') sym = '<circle cx="13" cy="18" r="2.2" style="fill:' + ink + '"/><path d="M8 15v6M18 15v6"/>';
+    return '<svg class="mini" viewBox="0 0 46 36" aria-hidden="true"><rect x="1" y="1" width="44" height="34" rx="4" style="fill:' + fill + ';stroke:rgba(0,0,0,.5)"/>' +
+      '<path d="M5 1h36a4 4 0 0 1 4 4v1.5H1V5a4 4 0 0 1 4-4z" style="fill:' + band + '"/>' +
+      '<g style="stroke:' + ink + ';fill:none;stroke-width:1.4"><rect x="5" y="12" width="16" height="12"/>' + sym + '</g>' +
+      '<text x="35" y="23" text-anchor="middle" style="fill:' + ink + ';font:700 13px var(--f-ui)">' + u.str + '</text></svg>';
+  }
+  function meter(u) {
+    let h = '<div class="meter' + (u.str <= 3 ? ' low' : '') + '" role="img" aria-label="Strength ' + u.str + ' of ' + u.max + '">';
+    for (let k = 0; k < u.max; k++) h += '<i class="' + (k < u.str ? 'on' : '') + '"></i>';
+    return h + '</div>';
+  }
+  function terrainLine(c, r) {
+    const i = r * sc.cols + c, t = E.TERRAIN[MAP.ter[i]];
+    let s = '<b>' + t.name + '</b> · ' + E.ELEV_NAMES[MAP.elev[i]];
+    if (t.def !== 1) s += ' · cover ×' + t.def;
+    if (MAP.roadHex[i]) s += ' · road';
+    return s;
+  }
+  function fmtMp(x) { return (Math.round(x * 4) / 4).toString().replace('.5', '½').replace('.25', '¼').replace('.75', '¾').replace(/^0(?=[½¼¾])/, ''); }
+
+  function renderCard() {
+    const st = G.state;
+    if (!st) { cardEl.innerHTML = ''; actionsEl.innerHTML = ''; return; }
+    let html = '', acts = [];
+    const u = selUnit();
+    if (G.ai) {
+      html = '<div class="ai-h">' + esc(sc.sides[st.side].short) + ' command is moving <span class="dots"><i></i><i></i><i></i></span></div>' +
+        '<div class="hint">Turn ' + st.turn + ' · ' + E.clock(st) + '. You can pan and pinch the map while you wait. Dashed arrows show their moves.</div>';
+      const last = st.log.slice(-2).filter(l => l.t === st.turn).map(l => '<div class="hint">' + esc(l.text) + '</div>').join('');
+      html += last;
+      acts.push(['ff', G.fastThisTurn || G.prefs.fast ? 'Fast forward on' : 'Fast forward', 'wide', !!(G.fastThisTurn || G.prefs.fast)]);
+      acts.push(['menu', 'Menu', '', false]);
+    } else if (u && G.pending) {
+      const t = unitById(G.pending);
+      const f = E.forecast(st, u, t);
+      html = '<div class="fc-head">Fire on <b>' + esc(t.name) + '</b>' + (t.nat === 'fr' && t.sub ? ' · ' + esc(t.sub.replace('Division ', '')) : '') + ' · ' + f.dist + ' hex' + (f.dist > 1 ? 'es' : '') + '</div>' +
+        '<div class="fc-grid"><div class="fc-col"><span class="lbl">You inflict</span><span class="big good">≈' + f.exp.toFixed(1) + '</span><span class="rng">' + f.range[0] + '–' + f.range[1] + ' strength</span></div>' +
+        '<div class="fc-col"><span class="lbl">Return fire</span>' + (f.back ? '<span class="big bad">≈' + f.back.exp.toFixed(1) + '</span><span class="rng">' + f.back.range[0] + '–' + f.back.range[1] + ' strength</span>' : '<span class="big">—</span><span class="rng">Out of their range</span>') + '</div></div>' +
+        (f.mods.length ? '<div class="mods">' + f.mods.map(esc).join(' · ') + '</div>' : '');
+      acts.push(['cancel', 'Cancel', '', false]);
+      acts.push(['fire', 'Fire', 'primary wide', false]);
+    } else if (u) {
+      const T = E.UNIT_TYPES[u.type];
+      const mine = u.side === st.side && humanTurn();
+      const enemy = st.players[u.side] !== 'human' || (bothHuman() && u.side !== st.side);
+      let status = '';
+      if (mine) status = !u.moved && !u.fired ? '<span class="tag ready">Ready</span>' : u.fired ? '<span class="tag">Fired</span>' : (E.canMove(u) || E.canFire(u)) ? '<span class="tag">Moved</span>' : '<span class="tag">Spent</span>';
+      else if (enemy) status = '<span class="tag enemy ' + u.side + '">' + (u.side === 'de' ? 'German' : 'French') + '</span>';
+      const rng = E.fireRange(st, u, E.idxOf(st, u));
+      html = '<div class="ucard">' + counterSVG(u) +
+        '<div style="min-width:0"><div class="u-name">' + esc(u.name) + status + '</div><div class="u-sub">' + esc(u.sub || '') + '</div>' + meter(u) + '</div>' +
+        '<div class="u-str"><b>' + u.str + '</b><small>of ' + u.max + '</small></div></div>' +
+        '<div class="facts"><span><em>Move</em>' + (mine ? fmtMp(u.mp) + '/' : '') + T.mv + '</span><span><em>Range</em>' + (rng[0] === rng[1] ? rng[0] : rng[0] + '–' + rng[1]) + '</span>' +
+        '<span><em>Fire</em>' + T.att.foot + '·' + T.att.horse + '·' + T.att.guns + '</span><span><em>Def</em>' + T.def + '</span></div>' +
+        '<div class="where">' + esc(T.name) + ' — <i>' + esc(T.kit) + '</i>. ' + terrainLine(u.c, u.r) + '</div>';
+      if (mine && !E.canMove(u) && !E.canFire(u)) html += '<div class="hint">This unit has done all it can this turn.</div>';
+      else if (mine && E.canFire(u) && !G.targets.length && !E.canMove(u)) html += '<div class="hint">No enemy in range.</div>';
+      else if (mine && T.mof && !u.moved && !u.fired) html += '';
+      pushTurnActions(acts);
+    } else if (G.inspect) {
+      const [c, r] = G.inspect, i = r * sc.cols + c, t = E.TERRAIN[MAP.ter[i]];
+      const oi = MAP.objIdx.indexOf(i);
+      const place = sc.places.find(p => p.c === c && p.r === r);
+      const cost = cl => (t.cost[cl] == null ? '—' : fmtMp(t.cost[cl]));
+      html = '<div class="idle-h">' + esc(place ? place.name : t.name) + (place ? ' <small>· ' + esc(t.name) + '</small>' : '') + '</div>' +
+        '<div class="where">' + terrainLine(c, r) + '</div>' +
+        '<div class="facts"><span><em>Move cost</em>foot ' + cost('foot') + ' · horse ' + cost('horse') + ' · guns ' + cost('guns') + '</span><span><em>Climbing</em>+½, guns +1</span></div>' +
+        (oi >= 0 ? '<div class="hint">Objective worth ' + sc.objectives[oi].vp + ' VP, held by the ' + sc.sides[st.control[oi]].short + '.</div>' : '');
+      pushTurnActions(acts);
+    } else {
+      const v = E.vp(st);
+      const ready = humanTurn() ? freshUnits().length : 0;
+      html = '<div class="idle-h">' + (humanTurn() ? esc(sc.sides[st.side].short) + ' to move <small>· ' + ready + ' unit' + (ready === 1 ? '' : 's') + ' not yet used</small>' : st.over ? 'The battle is over' : 'Waiting') + '</div>' +
+        '<div class="objs">' + sc.objectives.map((o, k) => '<span class="obj"><i class="' + st.control[k] + '"></i>' + esc(o.name) + ' <b>' + o.vp + '</b></span>').join('') + '</div>' +
+        '<div class="hint">Germans hold ' + v.de + ' VP and need ' + sc.winVP + ' at nightfall. Tap a unit to act; a gold dot marks units that have not moved.</div>';
+      pushTurnActions(acts);
+    }
+    cardEl.innerHTML = html;
+    actionsEl.innerHTML = acts.map(([id, label, cls, pressed]) => '<button class="btn ' + cls + '" data-act="' + id + '"' + (pressed ? ' aria-pressed="true"' : '') + (id === 'undo' && !(humanTurn() && G.state.undo) ? ' disabled' : '') + '>' + esc(label) + '</button>').join('');
+  }
+
+  function pushTurnActions(acts) {
+    const st = G.state;
+    if (st.over) { acts.push(['result', 'Battle report', 'primary wide', false]); acts.push(['menu', 'Menu', '', false]); return; }
+    if (!humanTurn()) { acts.push(['menu', 'Menu', 'wide', false]); return; }
+    acts.push(['next', 'Next unit', '', false]);
+    acts.push(['undo', 'Undo move', '', false]);
+    const left = freshUnits().length;
+    acts.push(['end', G.confirmEnd ? 'End with ' + left + ' unused?' : 'End turn', G.confirmEnd ? 'warn' : 'primary', false]);
+  }
+
+  actionsEl.addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]');
+    if (!b || b.disabled) return;
+    const a = b.dataset.act, st = G.state;
+    if (a === 'next') nextUnit();
+    else if (a === 'undo') undo();
+    else if (a === 'end') endTurn();
+    else if (a === 'cancel') { G.pending = null; renderCard(); requestDraw(); }
+    else if (a === 'fire') { const u = selUnit(), t = unitById(G.pending); if (u && t && !G.busy) doAttack(u, t); }
+    else if (a === 'ff') { G.fastThisTurn = !G.fastThisTurn; renderCard(); }
+    else if (a === 'menu') showMenu();
+    else if (a === 'result') showResult();
+  });
+
+  // ------------------------------------------------------------ top bar
+  function updateBar() {
+    const st = G.state;
+    if (!st) return;
+    $('turnNo').textContent = st.turn; $('turnMax').textContent = sc.turns;
+    $('clock').textContent = E.clock(st);
+    $('sideFlag').className = 'flag ' + st.side;
+    $('sideName').textContent = sc.sides[st.side].short;
+    $('sideWho').textContent = st.over ? '' : st.players[st.side] === 'ai' ? 'AI' : bothHuman() ? '' : 'You';
+  }
+
+  let toastT = 0;
+  function toast(msg, ms) {
+    toastEl.textContent = msg; toastEl.classList.add('on');
+    clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('on'), ms || 2400);
+  }
+
+  // ------------------------------------------------------------ overlays
+  function openOverlay(html) { overlayEl.innerHTML = html; overlayEl.hidden = false; overlayEl.scrollTop = 0; }
+  function closeOverlay() { overlayEl.hidden = true; overlayEl.innerHTML = ''; }
+
+  const RULES_HTML = () => '<ul>' +
+    '<li>Tap one of your units. Pale hexes show where it can move; white rings mark enemies it can fire on. Tap a ringed enemy to see the odds, then tap it again or press <b>Fire</b>.</li>' +
+    '<li>A unit may move and then fire. <b>Guns</b> (artillery and mitrailleuses) move <i>or</i> fire, not both. Firing ends a unit’s movement.</li>' +
+    '<li>Moving next to an enemy ends movement (zone of control). Guns exert no zone of control.</li>' +
+    '<li>If you fire from within the target’s own range, it fires back at once, weakened by its losses.</li>' +
+    '<li>Infantry and cavalry can wade the Sauer but stand exposed in it. Guns cross only at the bridges of Wörth and Gunstett or the ford at Spachbach.</li>' +
+    '<li>A unit that neither moves nor fires, and is out of contact, recovers 1 strength at the end of its turn.</li>' +
+    '<li><b>Victory.</b> Objectives: Froeschwiller 4 VP, Elsasshausen 2, Wörth 1, Morsbronn 1, Niederwald 1. After turn 14 (nightfall) the Germans win with 6 VP or more and the French win if the Germans hold 3 or fewer. A side reduced to 30% of the strength it has committed collapses at once.</li>' +
+    '</ul>' +
+    '<h3>The two armies</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>Unit</th><th>Move</th><th>Range</th><th>Fire vs foot·horse·guns</th><th>Def</th></tr></thead><tbody>' +
+    Object.values(E.UNIT_TYPES).map(T => '<tr><td>' + esc(T.name) + '</td><td>' + T.mv + '</td><td>' + (T.rng[0] === T.rng[1] ? T.rng[1] : T.rng[0] + '–' + T.rng[1]) + (T.heightRange ? '+1' : '') + '</td><td>' + T.att.foot + '·' + T.att.horse + '·' + T.att.guns + '</td><td>' + T.def + '</td></tr>').join('') +
+    '</tbody></table></div>' +
+    '<h3>Terrain</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>Terrain</th><th>Foot</th><th>Horse</th><th>Guns</th><th>Cover</th></tr></thead><tbody>' +
+    Object.values(E.TERRAIN).map(t => '<tr><td>' + esc(t.name) + '</td><td>' + fmtMp(t.cost.foot) + '</td><td>' + fmtMp(t.cost.horse) + '</td><td>' + (t.cost.guns == null ? '—' : fmtMp(t.cost.guns)) + '</td><td>×' + t.def + '</td></tr>').join('') +
+    '<tr><td>Road (along it)</td><td>1</td><td>1</td><td>¾</td><td>—</td></tr></tbody></table></div>' +
+    '<p class="fine">Higher ground adds ×1.25 to the defender. Losses on each shot are random around the expected value shown in the forecast, from half to one and a half times it. Cavalry charging into woods, villages or vineyards fight at half effect.</p>';
+
+  function showBriefing() {
+    const saved = loadSave();
+    const canResume = saved && !saved.over;
+    const who = s => s.players.de === 'human' && s.players.fr === 'human' ? 'two players' : s.players.de === 'human' ? 'as the Germans' : 'as the French';
+    openOverlay('<div class="panel">' +
+      '<p class="eyebrow">Franco-Prussian War · Northern Alsace</p>' +
+      '<h1 class="display">Wörth</h1>' +
+      '<p class="date">Saturday, 6 August 1870 · 08:00 · Froeschwiller ridge</p>' +
+      sc.briefing.map((p, k) => '<p class="' + (k ? '' : 'lede') + '">' + esc(p) + '</p>').join('') +
+      '<div class="choices">' +
+      (canResume ? '<button class="choice" data-start="resume"><span class="swatch ' + (saved.players.de === 'human' && saved.players.fr === 'human' ? 'hs' : saved.players.de === 'human' ? 'de' : 'fr') + '"></span><span><b>Continue the battle</b><small>Turn ' + saved.turn + ' · ' + E.clock(saved) + ', playing ' + who(saved) + '</small></span><span class="arrow">›</span></button>' : '') +
+      '<button class="choice" data-start="de"><span class="swatch de"></span><span><b>Command the Germans</b><small>' + esc(sc.sides.de.commander) + '. Take Froeschwiller and the ridge by nightfall.</small></span><span class="arrow">›</span></button>' +
+      '<button class="choice" data-start="fr"><span class="swatch fr"></span><span><b>Command the French</b><small>' + esc(sc.sides.fr.commander) + '. Hold the ridge until dark.</small></span><span class="arrow">›</span></button>' +
+      '<button class="choice" data-start="hs"><span class="swatch hs"></span><span><b>Two players, one phone</b><small>Pass the phone between turns.</small></span><span class="arrow">›</span></button>' +
+      '</div>' +
+      '<details class="rules"><summary>How to play</summary>' + RULES_HTML() + '</details>' +
+      '<p class="fine">The map is schematic, drawn from period descriptions rather than surveyed: about 600 m to a hex and 45 minutes to a turn. Units are brigades or their equivalent, with game strengths rather than historical headcounts.</p>' +
+      '</div>');
+  }
+
+  overlayEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-start],[data-menu]');
+    if (!b) return;
+    if (b.dataset.start) {
+      const m = b.dataset.start;
+      if (m === 'resume') { const s = loadSave(); if (s) { startWith(s); return; } }
+      const players = m === 'de' ? { de: 'human', fr: 'ai' } : m === 'fr' ? { de: 'ai', fr: 'human' } : { de: 'human', fr: 'human' };
+      startWith(E.newGame(SC_ID, players));
+      return;
+    }
+    const a = b.dataset.menu;
+    if (a === 'close') { closeOverlay(); if (G.handoverPending) { G.handoverPending = false; announceTurn(); } }
+    else if (a === 'rules') showRules();
+    else if (a === 'log') showLog();
+    else if (a === 'speed') { G.prefs.fast = !G.prefs.fast; savePrefs(); showMenu(); renderCard(); }
+    else if (a === 'new') showConfirmNew();
+    else if (a === 'new-yes') { clearSave(); G.state = null; showBriefing(); renderCard(); requestDraw(); }
+    else if (a === 'menu') showMenu();
+    else if (a === 'field') { closeOverlay(); G.sel = null; renderCard(); requestDraw(); }
+  });
+
+  function showMenu() {
+    openOverlay('<div class="panel"><p class="eyebrow">Turn ' + G.state.turn + ' · ' + E.clock(G.state) + '</p><h1 class="display small">Field orders</h1>' +
+      '<div class="menu-list">' +
+      '<button class="btn primary" data-menu="close">Back to the map</button>' +
+      '<button class="btn" data-menu="rules">How to play</button>' +
+      '<button class="btn" data-menu="log">Battle log <span>' + G.state.log.length + ' entries</span></button>' +
+      '<button class="btn" data-menu="speed">Animation speed <span>' + (G.prefs.fast ? 'Fast' : 'Normal') + '</span></button>' +
+      '<button class="btn" data-menu="new">Start a new battle</button>' +
+      '</div></div>');
+  }
+  function showConfirmNew() {
+    openOverlay('<div class="panel"><h1 class="display small">Abandon this battle?</h1><p>The current game will be lost. You can then choose a side again.</p>' +
+      '<div class="row"><button class="btn" data-menu="menu">Keep playing</button><button class="btn warn" data-menu="new-yes">Abandon and restart</button></div></div>');
+  }
+  function showRules() {
+    openOverlay('<div class="panel"><p class="eyebrow">Wörth · rules</p><h1 class="display small">How to play</h1><div class="rules" style="border:0;padding:0">' + RULES_HTML() + '</div>' +
+      '<div class="row"><button class="btn primary" data-menu="close">Back to the map</button></div></div>');
+  }
+  function showLog() {
+    const items = G.state.log.slice().reverse().map(l => '<li class="' + esc(l.kind === 'de' || l.kind === 'fr' ? l.kind : l.kind) + '"><time>' + esc(l.time) + '</time><span>' + esc(l.text) + '</span></li>').join('');
+    openOverlay('<div class="panel"><p class="eyebrow">Newest first</p><h1 class="display small">Battle log</h1>' +
+      '<div class="row"><button class="btn primary" data-menu="close">Back to the map</button></div>' +
+      (items ? '<ol class="log">' + items + '</ol>' : '<p class="hint">Nothing has happened yet. The first shots are yours to fire.</p>') + '</div>');
+  }
+  function showHandover() {
+    const st = G.state;
+    G.handoverPending = true;
+    openOverlay('<div class="panel"><p class="eyebrow">Turn ' + st.turn + ' · ' + E.clock(st) + '</p><h1 class="display small">' + esc(sc.sides[st.side].name) + '</h1>' +
+      '<p>Pass the phone to the ' + esc(sc.sides[st.side].short) + ' commander.</p>' +
+      '<div class="row"><button class="btn primary" data-menu="close">Take command</button></div></div>');
+  }
+  function showResult() {
+    const st = G.state, o = st.over;
+    if (!o) return;
+    const v = E.vp(st), de = E.strength(st, 'de'), fr = E.strength(st, 'fr');
+    const title = o.winner === 'draw' ? 'Indecisive' : o.winner === 'de' ? 'German victory' : 'French victory';
+    const human = st.players.de === 'human' && st.players.fr !== 'human' ? 'de' : st.players.fr === 'human' && st.players.de !== 'human' ? 'fr' : null;
+    let line = o.reason === 'collapse' ? 'The ' + sc.sides[o.loser].short + ' have lost 70% of the strength they committed and can no longer hold together.'
+      : 'Nightfall. The Germans hold ' + v.de + ' VP of 9; they needed ' + sc.winVP + '.';
+    if (human) line += human === o.winner ? ' Your command carried the day.' : o.winner === 'draw' ? ' Neither side can claim the field.' : ' Your command was beaten.';
+    openOverlay('<div class="panel"><p class="eyebrow">' + (o.reason === 'collapse' ? 'Turn ' + o.turn + ' · ' + E.clock(st) : 'Nightfall · 18:30') + '</p>' +
+      '<h1 class="display small ' + (o.winner === 'draw' ? '' : 'verdict-' + o.winner) + '">' + title + '</h1><p class="lede">' + esc(line) + '</p>' +
+      '<div class="tally"><div><small>German losses</small><b>' + (de.committed - de.now) + '</b><small>of ' + de.committed + ' strength committed</small></div>' +
+      '<div><small>French losses</small><b>' + (fr.committed - fr.now) + '</b><small>of ' + fr.committed + ' strength committed</small></div></div>' +
+      '<div class="objs">' + sc.objectives.map((ob, k) => '<span class="obj"><i class="' + st.control[k] + '"></i>' + esc(ob.name) + ' <b>' + ob.vp + '</b></span>').join('') + '</div>' +
+      '<p class="fine">' + esc(sc.history) + '</p>' +
+      '<div class="row"><button class="btn" data-menu="field">View the field</button><button class="btn" data-menu="log">Battle log</button><button class="btn primary" data-menu="new-yes">New battle</button></div></div>');
+  }
+
+  // ------------------------------------------------------------ input
+  const pointers = new Map();
+  let gesture = null;
+  function local(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+  canvas.addEventListener('pointerdown', e => {
+    canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+    const p = local(e);
+    pointers.set(e.pointerId, p);
+    camAnim = null;
+    if (pointers.size === 1) gesture = { type: 'tap', sx: p.x, sy: p.y, cx: cam.x, cy: cam.y, t: performance.now() };
+    else if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      gesture = { type: 'pinch', d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, z0: cam.z, wx: mx / cam.z + cam.x, wy: my / cam.z + cam.y };
+    }
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!pointers.has(e.pointerId) || !gesture) return;
+    const p = local(e);
+    pointers.set(e.pointerId, p);
+    if (gesture.type === 'tap' || gesture.type === 'pan') {
+      const dx = p.x - gesture.sx, dy = p.y - gesture.sy;
+      if (gesture.type === 'tap' && Math.hypot(dx, dy) > 9) gesture.type = 'pan';
+      if (gesture.type === 'pan') { cam.x = gesture.cx - dx / cam.z; cam.y = gesture.cy - dy / cam.z; clampCam(); requestDraw(); }
+    } else if (gesture.type === 'pinch' && pointers.size >= 2) {
+      const [a, b] = [...pointers.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y) || 1, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      const [zmin, zmax] = zLimits();
+      cam.z = Math.min(zmax, Math.max(zmin, gesture.z0 * d / gesture.d0));
+      cam.x = gesture.wx - mx / cam.z; cam.y = gesture.wy - my / cam.z;
+      clampCam(); requestDraw();
+    }
+  });
+  function endPointer(e) {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.delete(e.pointerId);
+    if (!gesture) return;
+    if (gesture.type === 'tap' && pointers.size === 0 && e.type === 'pointerup' && performance.now() - gesture.t < 650) onTap(gesture.sx, gesture.sy);
+    if (gesture.type === 'pinch' && pointers.size === 1) {
+      const p = [...pointers.values()][0];
+      gesture = { type: 'pan', sx: p.x, sy: p.y, cx: cam.x, cy: cam.y };
+      return;
+    }
+    if (pointers.size === 0) { gesture = null; if (cam.z) renderStaticIfNeeded(); }
+  }
+  canvas.addEventListener('pointerup', endPointer);
+  canvas.addEventListener('pointercancel', endPointer);
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const p = local(e), wx = p.x / cam.z + cam.x, wy = p.y / cam.z + cam.y;
+    const [zmin, zmax] = zLimits();
+    cam.z = Math.min(zmax, Math.max(zmin, cam.z * Math.exp(-e.deltaY * 0.0015)));
+    cam.x = wx - p.x / cam.z; cam.y = wy - p.y / cam.z; clampCam(); requestDraw();
+  }, { passive: false });
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault()));
+  document.addEventListener('dblclick', e => e.preventDefault());
+  function renderStaticIfNeeded() { /* static layer is resolution-independent enough; kept for future level-of-detail */ }
+
+  $('menuBtn').addEventListener('click', () => { if (G.state) showMenu(); else showBriefing(); });
+  $('fitBtn').addEventListener('click', () => {
+    const fitZ = Math.min(viewW / WORLD_W, viewH / WORLD_H);
+    if (cam.z > fitZ * 1.05) panTo(WORLD_W / 2, WORLD_H / 2, 320, fitZ);
+    else { const u = selUnit(); const [x, y] = u ? center(u.c, u.r) : [WORLD_W / 2, WORLD_H / 2]; panTo(x, y, 320, defaultZoom()); }
+  });
+  $('focusBtn').addEventListener('click', () => {
+    const u = selUnit();
+    if (u) { const [x, y] = center(u.c, u.r); panTo(x, y, 300, Math.max(cam.z, defaultZoom())); return; }
+    if (G.state) { const list = readyUnits(); if (list.length) { select(list[0].id); const [x, y] = center(list[0].c, list[0].r); panTo(x, y, 300, Math.max(cam.z, defaultZoom())); } }
+  });
+
+  // ------------------------------------------------------------ boot
+  function startWith(state) {
+    G.state = state; G.sel = null; G.pending = null; G.inspect = null; G.trails = []; G.effects = []; G.ghosts = [];
+    closeOverlay(); save();
+    updateBar(); refreshSel(); renderCard();
+    const human = state.players[state.side] === 'human' ? state.side : (state.players.de === 'human' ? 'de' : 'fr');
+    const focus = human === 'de' ? center(11, 7) : center(5, 8);
+    centerOn(focus[0], focus[1], defaultZoom());
+    if (state.over) { showResult(); return; }
+    if (state.players[state.side] === 'ai') runAI();
+    else if (bothHuman()) showHandover();
+    else announceTurn();
+  }
+
+  function start(data) {
+    loadPrefs();
+    if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas); else window.addEventListener('resize', resize);
+    resize();
+    buildStatic(); requestDraw();
+    const fontsReady = document.fonts && document.fonts.load ? Promise.all([
+      document.fonts.load('600 12px "IBM Plex Sans Condensed"'), document.fonts.load('italic 600 12px "Bodoni Moda"'),
+    ]) : Promise.resolve();
+    Promise.race([fontsReady, sleep(2500)]).then(() => { buildStatic(); requestDraw(); renderCard(); });
+    let restored = null;
+    if (data && data.save) { try { restored = E.deserialize(data.save); } catch (e) { restored = null; } }
+    if (restored) startWith(restored);
+    else { renderCard(); showBriefing(); }
+  }
+
+  if (window.claude && window.claude.hot && window.claude.hot.snapshot) {
+    try { window.claude.hot.snapshot(() => ({ save: G.state && !G.busy ? E.serialize(G.state) : null })); } catch (e) { /* optional */ }
+  }
+  window.__woerth = { G, cam, E };
+  if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start);
+  else start((window.claude && window.claude.hot && window.claude.hot.data) || {});
+})();
+
+</script>
+</body></html>
