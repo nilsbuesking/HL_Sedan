@@ -27,7 +27,8 @@
     'w': { name: 'Woods', cost: { foot: 2, horse: 3, guns: 3 }, def: 1.5, cover: true },
     'g': { name: 'Vineyards', cost: { foot: 1.5, horse: 2, guns: 2 }, def: 1.25, cover: true },
     'v': { name: 'Village', cost: { foot: 1, horse: 1, guns: 1 }, def: 1.6, cover: true },
-    '~': { name: 'River Sauer', cost: { foot: 3, horse: 4, guns: null }, def: 0.6, water: true },
+    // On 6 August the Wörth bridge was down and infantry waded breast-deep (Moltke); horses and guns need a ford or bridge.
+    '~': { name: 'River Sauer', cost: { foot: 3, horse: null, guns: null }, def: 0.6, water: true },
     'f': { name: 'Ford', cost: { foot: 2, horse: 2, guns: 3 }, def: 0.75, water: true },
     'b': { name: 'Bridge', cost: { foot: 1, horse: 1, guns: 1 }, def: 0.9 },
   };
@@ -46,9 +47,12 @@
     cuir: { name: 'Cuirassiers', kit: 'Heavy cavalry; charges fail against cover', cls: 'horse', mv: 5, rng: [1, 1], att: { foot: 7, horse: 7, guns: 9 }, def: 4, zoc: true, sym: 'cav', value: 1 },
     art_fr: { name: 'Artillerie', kit: 'La Hitte muzzle-loaders; +1 range on heights', cls: 'guns', mv: 3, rng: [1, 2], att: { foot: 6, horse: 6, guns: 4 }, def: 3, zoc: false, mof: true, heightRange: true, sym: 'art', value: 1.2 },
     mitr: { name: 'Mitrailleuses', kit: 'Reffye volley guns; deadly to men, weak against guns', cls: 'guns', mv: 3, rng: [1, 2], att: { foot: 9, horse: 9, guns: 2 }, def: 3, zoc: false, mof: true, sym: 'mg', value: 1.1 },
+    // Commanders do not fire. rng [1, 0] gives an empty range, so every range loop skips them.
+    cmd: { name: 'Commander and staff', kit: 'Units next to him fire ×1.1; can be attacked only from next to him', cls: 'horse', mv: 5, rng: [1, 0], att: { foot: 0, horse: 0, guns: 0 }, def: 5, zoc: false, cmd: true, sym: 'cmd', value: 3 },
   };
 
   const K = 6; // firepower scale: expected losses = K * strength/10 * att / (att + def)
+  const CMD_BONUS = 1.1, CMD_LOST = 0.95;
 
   // ---------------------------------------------------------------- Scenario: Wörth, 6 August 1870
   function riverPath() {
@@ -127,18 +131,38 @@
         { c: 4.4, r: 0.9, name: 'Hochwald' },
         { c: 10.15, r: 3.2, name: 'Sauer', river: true },
       ],
+      // Places that can be held. vp counts towards victory; inc is the reserves the holder draws each turn.
       objectives: [
-        { c: 4, r: 6, name: 'Froeschwiller', vp: 4, owner: 'fr' },
-        { c: 5, r: 8, name: 'Elsasshausen', vp: 2, owner: 'fr' },
-        { c: 9, r: 6, name: 'Wörth', vp: 1, owner: 'fr' },
-        { c: 7, r: 14, name: 'Morsbronn', vp: 1, owner: 'fr' },
-        { c: 5, r: 11, name: 'Niederwald', vp: 1, owner: 'fr' },
+        { c: 4, r: 6, name: 'Froeschwiller', vp: 4, inc: 2, owner: 'fr' },
+        { c: 5, r: 8, name: 'Elsasshausen', vp: 2, inc: 1, owner: 'fr' },
+        { c: 9, r: 6, name: 'Wörth', vp: 1, inc: 1, owner: 'fr' },
+        { c: 7, r: 14, name: 'Morsbronn', vp: 1, inc: 1, owner: 'fr' },
+        { c: 5, r: 11, name: 'Niederwald', vp: 1, inc: 1, owner: 'fr' },
+        { c: 0, r: 6, name: 'Reichshoffen', vp: 0, inc: 1, owner: 'fr' },
+        { c: 2, r: 2, name: 'Neehwiller', vp: 0, inc: 1, owner: 'fr' },
+        { c: 7, r: 2, name: 'Langensoultzbach', vp: 0, inc: 1, owner: 'de' },
+        { c: 13, r: 2, name: 'Görsdorf', vp: 0, inc: 1, owner: 'de' },
+        { c: 15, r: 6, name: 'Preuschdorf', vp: 0, inc: 1, owner: 'de' },
+        { c: 11, r: 9, name: 'Spachbach', vp: 0, inc: 1, owner: 'de' },
+        { c: 11, r: 12, name: 'Gunstett', vp: 0, inc: 1, owner: 'de' },
       ],
+      // Requisition: reserves (stragglers, detachments, ammunition columns) bought with income from held places.
+      reserves: {
+        base: { de: 0, fr: 0 },
+        refitCost: 4, refitAmt: 3, callupCost: 10, callupMax: { de: 5, fr: 2 },
+        callup: {
+          de: { nat: 'pr', type: 'inf_pr', name: 'Kombiniertes Bataillon', sub: 'Formed from detachments and stragglers', short: 'KB', str: 5 },
+          fr: { nat: 'fr', type: 'inf_fr', name: 'Bataillon de marche', sub: 'Formed from detachments and stragglers', short: 'BM', str: 5 },
+        },
+      },
       sides: {
         de: { name: 'German Third Army', short: 'Germans', commander: 'Crown Prince Friedrich Wilhelm', ai: 'attack' },
         fr: { name: 'Armée d’Alsace', short: 'French', commander: 'Maréchal de MacMahon', ai: 'defend' },
       },
       units: [
+        // ---- Commanders. The Crown Prince had ordered no battle for the 6th and reached the field at about 13:00.
+        { id: 'fr-mm', side: 'fr', nat: 'fr', type: 'cmd', name: 'Maréchal de MacMahon', sub: 'Commander · I Corps and the Armée d’Alsace', short: 'MM', c: 4, r: 5, str: 4 },
+        { id: 'de-kp', side: 'de', nat: 'pr', type: 'cmd', name: 'Kronprinz Friedrich Wilhelm', sub: 'Commander · III. Armee', short: 'KP', c: 15, r: 6, str: 4, arrive: 8 },
         // ---- French: I Corps (MacMahon) on the Froeschwiller ridge, with Conseil-Dumesnil's division of VII Corps
         { id: 'fr-d1', side: 'fr', nat: 'fr', type: 'inf_fr', name: '1re brigade', sub: 'Division Ducrot', short: 'D1', c: 4, r: 4 },
         { id: 'fr-d2', side: 'fr', nat: 'fr', type: 'inf_fr', name: '2e brigade', sub: 'Division Ducrot', short: 'D2', c: 6, r: 4 },
@@ -253,18 +277,91 @@
   function newGame(scenarioId, players, seed) {
     const sc = SCENARIOS[scenarioId];
     const state = {
-      v: 1, scenarioId, turn: 1, side: sc.order[0], seed: (seed >>> 0) || ((Math.random() * 2 ** 31) | 0),
+      v: 2, scenarioId, turn: 1, side: sc.order[0], seed: (seed >>> 0) || ((Math.random() * 2 ** 31) | 0),
       players: players || { de: 'human', fr: 'ai' },
       control: sc.objectives.map(o => o.owner),
       units: sc.units.map(u => ({
         id: u.id, side: u.side, nat: u.nat, type: u.type, name: u.name, sub: u.sub, short: u.short,
         c: u.c, r: u.r, entry: [u.c, u.r], str: u.str || 10, max: u.str || 10, arrive: u.arrive || 0,
-        on: !u.arrive, dead: false, mp: 0, moved: false, fired: false, acted: false, engaged: false,
+        on: !u.arrive, dead: false, mp: 0, moved: false, fired: false, acted: false, engaged: false, refit: false,
       })),
+      res: { de: 0, fr: 0 }, income: { de: 0, fr: 0 }, callups: { de: 0, fr: 0 }, cmdLost: { de: false, fr: false },
       log: [], over: null, lastEvents: [],
     };
     startSideTurn(state);
     return state;
+  }
+
+  function isCmd(u) { return !!UNIT_TYPES[u.type].cmd; }
+  function commander(state, side) { return state.units.find(u => u.side === side && isCmd(u)) || null; }
+  function cmdAdjacent(state, s, sIdx) { // is s, standing at sIdx, next to its own commander?
+    const cu = commander(state, s.side);
+    if (!cu || !cu.on || cu.dead || cu.id === s.id) return false;
+    const W = scen(state).cols;
+    return hexDist(cu.c, cu.r, sIdx % W, (sIdx / W) | 0) === 1;
+  }
+
+  // ---------------------------------------------------------------- Places and reserves
+  function incomeOf(state, side) {
+    const sc = scen(state);
+    let n = (sc.reserves && sc.reserves.base[side]) || 0;
+    sc.objectives.forEach((o, i) => { if (state.control[i] === side) n += o.inc || 0; });
+    return n;
+  }
+  function supplyHexes(state, side) { // villages held by `side`: refits happen in or next to them
+    const sc = scen(state), map = mapOf(state), out = [];
+    sc.objectives.forEach((o, i) => { if (state.control[i] === side && map.ter[map.objIdx[i]] === 'v') out.push(map.objIdx[i]); });
+    return out;
+  }
+  function inContact(state, idx, side, occ) {
+    return mapOf(state).nbrs[idx].some(([, n]) => occ[n] && occ[n].side !== side);
+  }
+  // Returns null if the unit can refit now, otherwise a short reason.
+  function refitBlock(state, u) {
+    const R = scen(state).reserves;
+    if (!R || state.over || !u.on || u.dead || u.side !== state.side) return 'Not available';
+    if (u.refit) return 'Already refitted this turn';
+    if (u.fired) return 'Has fired this turn';
+    if (u.str >= u.max) return 'At full strength';
+    const map = mapOf(state), idx = idxOf(state, u), occ = occupancy(state);
+    if (u.engaged) return 'Under fire since your last turn';
+    if (inContact(state, idx, u.side, occ)) return 'Too close to the enemy';
+    const sup = supplyHexes(state, u.side);
+    if (!sup.some(v => v === idx || map.nbrs[v].some(([, n]) => n === idx))) return 'Not in or next to a village you hold';
+    if (state.res[u.side] < R.refitCost) return 'Needs ' + R.refitCost + ' reserves';
+    return null;
+  }
+  function refit(state, u) {
+    if (refitBlock(state, u)) return null;
+    const R = scen(state).reserves;
+    const gain = Math.min(R.refitAmt, u.max - u.str);
+    state.res[u.side] -= R.refitCost;
+    u.str += gain; u.refit = true; u.mp = 0; u.acted = true;
+    state.undo = null;
+    addLog(state, unitLabel(u) + ' refits: +' + gain + ' strength.', u.side);
+    return { gain, unitId: u.id };
+  }
+  function callupHexes(state, side) {
+    const R = scen(state).reserves;
+    if (!R || state.over || side !== state.side || state.callups[side] >= R.callupMax[side] || state.res[side] < R.callupCost) return [];
+    const occ = occupancy(state);
+    return supplyHexes(state, side).filter(i => !occ[i] && !inContact(state, i, side, occ));
+  }
+  function callup(state, idx) {
+    const side = state.side, sc = scen(state), R = sc.reserves;
+    if (!callupHexes(state, side).includes(idx)) return null;
+    const spec = R.callup[side], n = ++state.callups[side];
+    const u = {
+      id: side + '-x' + n, side, nat: spec.nat, type: spec.type, name: spec.name + ' ' + n, sub: spec.sub, short: spec.short + n,
+      c: idx % sc.cols, r: (idx / sc.cols) | 0, entry: [idx % sc.cols, (idx / sc.cols) | 0], str: spec.str, max: spec.str, arrive: 0,
+      on: true, dead: false, mp: 0, moved: true, fired: false, acted: true, engaged: false, refit: false, forming: true, raised: true,
+    };
+    state.units.push(u);
+    state.res[side] -= R.callupCost;
+    state.undo = null;
+    const place = sc.objectives[mapOf(state).objIdx.indexOf(idx)];
+    addLog(state, u.name + ' is formed at ' + place.name + '.', side);
+    return { unitId: u.id };
   }
 
   function live(state, side) { return state.units.filter(u => u.on && !u.dead && (!side || u.side === side)); }
@@ -362,7 +459,7 @@
   }
 
   function canMove(u) { return u.on && !u.dead && !u.fired && u.mp > 0; }
-  function canFire(u) { return u.on && !u.dead && !u.fired && !(UNIT_TYPES[u.type].mof && u.moved); }
+  function canFire(u) { return u.on && !u.dead && !u.fired && !u.refit && !u.forming && !UNIT_TYPES[u.type].cmd && !(UNIT_TYPES[u.type].mof && u.moved); }
 
   function moveUnit(state, u, c, r) {
     if (state.over || u.side !== state.side || !canMove(u)) return null;
@@ -378,7 +475,7 @@
     if (info.stop) u.mp = 0; // entering an enemy zone of control ends movement
     u.moved = true; u.acted = true;
     const oi = map.objIdx.indexOf(to);
-    if (oi >= 0 && state.control[oi] !== u.side) {
+    if (oi >= 0 && state.control[oi] !== u.side && !isCmd(u)) { // a commander's staff does not garrison a place
       state.control[oi] = u.side;
       addLog(state, unitLabel(u) + ' takes ' + sc.objectives[oi].name + '.', 'capture');
     }
@@ -413,7 +510,7 @@
     const [lo, hi] = fireRange(state, u, idx), out = [];
     for (let d = lo; d <= hi; d++) for (const j of map.rings[idx][d]) {
       const e = occ[j];
-      if (e && e.side !== u.side) out.push(e);
+      if (e && e.side !== u.side && (d === 1 || !isCmd(e))) out.push(e); // commanders can be attacked only from next to them
     }
     return out;
   }
@@ -428,6 +525,8 @@
     if (S.cls === 'horse' && tt.cover && !counter) { a *= 0.5; mods.push('Charge into cover ×0.5'); }
     if (S.cls === 'foot' && d >= 2) { a *= 0.9; mods.push('Long range ×0.9'); }
     if (S.elite && d === 1 && !counter) { a *= 1.2; mods.push('Élan ×1.2'); }
+    if (cmdAdjacent(state, s, sIdx)) { a *= CMD_BONUS; mods.push('Commander at hand ×' + CMD_BONUS); }
+    if (state.cmdLost && state.cmdLost[s.side]) { a *= CMD_LOST; mods.push('Commander lost ×' + CMD_LOST); }
     let df = Tt.def * tt.def;
     if (tt.def > 1) mods.push(tt.name + ' cover ×' + tt.def);
     if (tt.def < 1) mods.push('Target in ' + tt.name.toLowerCase() + ' ×' + tt.def);
@@ -486,11 +585,16 @@
     if (lost) u.dead = true;
     let txt = unitLabel(u) + ' engages ' + unitLabel(t) + ': −' + dmg;
     if (countered) txt += ', return fire −' + back;
-    if (killed) txt += '. ' + unitLabel(t) + ' is broken';
+    if (killed) txt += '. ' + unitLabel(t) + (isCmd(t) ? ' has fallen' : ' is broken');
     if (lost) txt += '. ' + unitLabel(u) + ' is broken';
     addLog(state, txt + '.', u.side);
+    let cmdFell = null;
+    if (killed && isCmd(t)) {
+      state.cmdLost[t.side] = true; cmdFell = t.side;
+      addLog(state, 'The ' + scen(state).sides[t.side].short + ' have lost their commander. Their fire is ×' + CMD_LOST + ' for the rest of the day.', 'end');
+    }
     checkCollapse(state);
-    return { dmg, back, countered, killed, lost, from: [u.c, u.r], to: [t.c, t.r], attackerId: u.id, targetId: t.id };
+    return { dmg, back, countered, killed, lost, cmdFell, from: [u.c, u.r], to: [t.c, t.r], attackerId: u.id, targetId: t.id };
   }
 
   // ---------------------------------------------------------------- Turn flow and victory
@@ -521,11 +625,12 @@
         if (i >= 0) { u.c = i % sc.cols; u.r = (i / sc.cols) | 0; u.on = true; occ[i] = u; arrived.push(u); }
       }
       if (u.on && !u.dead) {
-        u.mp = UNIT_TYPES[u.type].mv; u.moved = false; u.fired = false; u.acted = false;
+        u.mp = UNIT_TYPES[u.type].mv; u.moved = false; u.fired = false; u.acted = false; u.refit = false; u.forming = false;
       }
     }
     for (const u of arrived) addLog(state, unitLabel(u) + ' arrives on the field.', 'arrive');
     state.arrivals = arrived.map(u => u.id);
+    if (sc.reserves) { const inc = incomeOf(state, state.side); state.res[state.side] += inc; state.income[state.side] = inc; }
     state.undo = null;
   }
 
@@ -555,7 +660,7 @@
   function strength(state, side) {
     let now = 0, committed = 0;
     for (const u of state.units) {
-      if (u.side !== side || (!u.on && !u.dead)) continue;
+      if (u.side !== side || (!u.on && !u.dead) || isCmd(u)) continue;
       committed += u.max;
       if (!u.dead) now += u.str;
     }
@@ -585,8 +690,8 @@
 
   // ---------------------------------------------------------------- AI
   const AIP = {
-    attack: { cover: 1.2, fear: 0.45, pull: 1.1, capture: 3, garrison: 1.0, fireProspect: 0.45, caution: 0.7, support: 0.5 },
-    defend: { cover: 2.0, fear: 0.9, hold: 0.9, radius: 2, retake: 0.5, garrison: 2.2, fireProspect: 0.4, caution: 1.0, support: 0.3 },
+    attack: { cover: 1.2, fear: 0.45, pull: 1.1, capture: 3, garrison: 1.0, fireProspect: 0.45, caution: 0.7, support: 0.5, refit: 0.3 },
+    defend: { cover: 2.0, fear: 0.9, hold: 0.9, radius: 2, retake: 0.5, garrison: 2.2, fireProspect: 0.4, caution: 1.0, support: 0.3, refit: 0.6 },
   };
 
   const fieldCache = {};
@@ -619,21 +724,28 @@
     const enemies = live(state, other(side));
     const threat = Array.from({ length: map.N }, () => []);
     const zocMine = zocSet(state, other(side), occ); // ZOC that my units exert on the enemy
+    // adjThreat: enemies that could stand next to a hex after their next move; only a commander needs it
+    const myCmd = commander(state, side);
+    const needAdj = myCmd && myCmd.on && !myCmd.dead && canMove(myCmd) && !myCmd.moved;
+    const adjThreat = needAdj ? Array.from({ length: map.N }, () => []) : null;
     for (const e of enemies) {
       const T = UNIT_TYPES[e.type], ei = idxOf(state, e);
+      e._hit = new Set();
+      if (T.cmd) continue;
       let positions = [ei];
       if (!T.mof) {
         const R = reachable(state, e, { fresh: true, occ, zoc: zocMine });
         positions = [];
         for (const [k, v] of R) if (v.end || k === ei) positions.push(k);
       }
-      const hit = new Set();
+      const hit = e._hit, adj = needAdj ? new Set() : null;
       for (const p of positions) {
         const [lo, hi] = fireRange(state, e, p);
         for (let d = lo; d <= hi; d++) for (const j of map.rings[p][d]) hit.add(j);
+        if (adj) for (const [, n] of map.nbrs[p]) adj.add(n);
       }
       for (const h of hit) threat[h].push(e);
-      e._hit = hit;
+      if (adj) for (const h of adj) adjThreat[h].push(e);
     }
     // how many of my units each enemy can choose between: its fire is shared out among them
     const mine = live(state, side);
@@ -644,8 +756,28 @@
       delete e._hit;
     }
     const posture = AIP[sc.sides[side].ai];
-    return { state, side, map, sc, occ, enemies, threat, P: posture, mode: sc.sides[side].ai };
+    return { state, side, map, sc, occ, enemies, threat, adjThreat, P: posture, mode: sc.sides[side].ai };
   }
+
+  // Where should the commander stand? Next to units that will fire, never where the enemy can reach him.
+  function cmdScore(ctx, u, idx) {
+    const { state, map, occ } = ctx;
+    let s = 0;
+    for (const [, n] of map.nbrs[idx]) { const o = occ[n]; if (o && o.side !== u.side) return -100; }
+    for (const e of ctx.adjThreat[idx]) s -= 10 * (e.str / 10) * (UNIT_TYPES[e.type].cls === 'guns' ? 0.5 : 1);
+    for (const [, n] of map.nbrs[idx]) {
+      const o = occ[n];
+      if (!o || o.side !== u.side || isCmd(o)) continue;
+      const T = UNIT_TYPES[o.type];
+      const has = targetsFrom(state, o, n, occ).length > 0;
+      s += (has ? 1.6 : 0.5) * (T.cls === 'guns' ? 1.3 : 1) * (o.str / 10);
+    }
+    const oi = map.objIdx.indexOf(idx);
+    if (oi >= 0) s -= 1.5 * ctx.sc.objectives[oi].vp; // leave the key places to the infantry
+    return s;
+  }
+
+  function placeWorth(o) { return o.vp + 0.6 * (o.inc || 0); }
 
   function incoming(ctx, u, idx) {
     const list = ctx.threat[idx];
@@ -673,7 +805,7 @@
     for (const [, n] of map.nbrs[idx]) {
       const o = ctx.occ[n];
       if (!o || o === u) continue;
-      if (o.side === u.side) { if (UNIT_TYPES[o.type].cls !== 'guns') friends++; } else enemyAdj++;
+      if (o.side === u.side) { if (UNIT_TYPES[o.type].cls !== 'guns' && !isCmd(o)) friends++; } else enemyAdj++;
     }
     s += P.support * Math.min(friends, 3);
     if (T.cls === 'guns' && enemyAdj) s -= 3 * enemyAdj;
@@ -682,33 +814,34 @@
       const [lo, hi] = fireRange(state, u, idx);
       for (let d = lo; d <= hi; d++) for (const j of map.rings[idx][d]) {
         const e = ctx.occ[j];
-        if (e && e.side !== u.side) best = Math.max(best, fireExpect(state, u, idx, e, j, false).exp * UNIT_TYPES[e.type].value);
+        if (e && e.side !== u.side && (d === 1 || !isCmd(e))) best = Math.max(best, fireExpect(state, u, idx, e, j, false).exp * UNIT_TYPES[e.type].value);
       }
       s += P.fireProspect * best;
     }
-    // objectives
+    // places: victory objectives pull the army; any held place is worth occupying for its income
     const objs = sc.objectives;
     const oi = map.objIdx.indexOf(idx);
     if (ctx.mode === 'attack') {
       let best = Infinity;
       objs.forEach((o, k) => {
-        if (state.control[k] === u.side) return;
+        if (state.control[k] === u.side || !o.vp) return;
         const f = costField(state, T.cls, map.objIdx[k])[idx];
         best = Math.min(best, f / (0.7 + 0.15 * o.vp));
       });
       if (isFinite(best)) s -= P.pull * urgency * best * (T.cls === 'guns' ? 0.5 : 1);
-      if (oi >= 0 && T.cls === 'foot') s += (state.control[oi] === u.side ? P.garrison : P.capture) * objs[oi].vp;
-      else if (oi >= 0 && state.control[oi] !== u.side) s += P.capture * objs[oi].vp * 0.5;
+      if (oi >= 0 && T.cls === 'foot') s += (state.control[oi] === u.side ? P.garrison * objs[oi].vp : P.capture * placeWorth(objs[oi]));
+      else if (oi >= 0 && state.control[oi] !== u.side) s += P.capture * placeWorth(objs[oi]) * 0.5;
     } else {
       let hold = Infinity, retake = Infinity;
       objs.forEach((o, k) => {
+        if (!o.vp) return;
         const f = costField(state, T.cls, map.objIdx[k])[idx];
         if (state.control[k] === u.side) hold = Math.min(hold, f);
         else if (o.vp >= 2) retake = Math.min(retake, f / o.vp);
       });
       if (isFinite(hold)) s -= P.hold * Math.max(0, hold - P.radius);
       if (isFinite(retake)) s -= P.retake * urgency * retake;
-      if (oi >= 0 && T.cls === 'foot') s += (state.control[oi] === u.side ? P.garrison : 3) * objs[oi].vp;
+      if (oi >= 0 && T.cls === 'foot') s += (state.control[oi] === u.side ? P.garrison * objs[oi].vp : 3 * placeWorth(objs[oi]));
     }
     return s;
   }
@@ -726,17 +859,48 @@
     let v = dmg * ve * (1 + 0.5 * dmg / Math.max(1, e.str)) + (kill ? 0.6 * e.str * ve : 0) - back * vu * P.caution;
     const oi = map.objIdx.indexOf(eIdx);
     if (oi >= 0 && kill) v += ctx.sc.objectives[oi].vp;
+    if (isCmd(e)) v += kill ? 6 : 1.5; // striking at the enemy commander
     return v;
+  }
+
+  function aiSpend(state, ctx) {
+    const R = ctx.sc.reserves;
+    if (!R) return null;
+    const side = ctx.side, map = ctx.map, W = ctx.sc.cols;
+    const hexes = callupHexes(state, side);
+    if (hexes.length) {
+      const foes = live(state, other(side)).map(e => idxOf(state, e));
+      let bi = -1, bv = -Infinity;
+      for (const h of hexes) {
+        let dmin = 99;
+        for (const f of foes) dmin = Math.min(dmin, hexDist(h % W, (h / W) | 0, f % W, (f / W) | 0));
+        const o = ctx.sc.objectives[map.objIdx.indexOf(h)];
+        const v = -Math.abs(dmin - 3) + 0.5 * o.vp;
+        if (v > bv) { bv = v; bi = h; }
+      }
+      if (bi >= 0) return { kind: 'callup', to: bi, val: 1 };
+    }
+    let bu = null, bv = 0;
+    for (const u of live(state, side)) {
+      if (refitBlock(state, u)) continue;
+      const gain = Math.min(R.refitAmt, u.max - u.str);
+      if (gain < 2 && !isCmd(u)) continue;
+      const v = gain * UNIT_TYPES[u.type].value;
+      if (v > bv) { bv = v; bu = u; }
+    }
+    if (bu) return { kind: 'refit', unitId: bu.id, to: idxOf(state, bu), val: 1 };
+    return null;
   }
 
   function aiNextAction(state) {
     if (state.over) return null;
     const side = state.side;
     const ctx = aiContext(state, side);
+    const W0 = scen(state).cols;
     let best = null;
     const consider = (val, act) => { if (!best || val > best.val) best = Object.assign({ val }, act); };
     for (const u of live(state, side)) {
-      if (!canMove(u) && !canFire(u)) continue;
+      if (isCmd(u) || (!canMove(u) && !canFire(u))) continue;
       const T = UNIT_TYPES[u.type], ui = idxOf(state, u);
       const cur = posScore(ctx, u, ui);
       const opts = [ui];
@@ -757,22 +921,52 @@
           const [lo, hi] = fireRange(state, u, idx);
           for (let d = lo; d <= hi; d++) for (const j of ctx.map.rings[idx][d]) {
             const e = ctx.occ[j];
-            if (!e || e.side === side) continue;
+            if (!e || e.side === side || (d > 1 && isCmd(e))) continue;
             consider(mv + attackValue(ctx, u, idx, e, j), { kind: 'attack', unitId: u.id, to: idx, targetId: e.id });
           }
         }
         if (idx !== ui && mv > 0.15) consider(mv, { kind: 'move', unitId: u.id, to: idx });
       }
+      // refitting where it stands, instead of firing, for a worn unit out of contact
+      if (ctx.sc.reserves && !refitBlock(state, u)) {
+        const gain = Math.min(ctx.sc.reserves.refitAmt, u.max - u.str);
+        if (gain >= 2) consider(ctx.P.refit * gain * T.value * (0.8 + 1.2 * (1 - u.str / u.max)), { kind: 'refit', unitId: u.id, to: ui });
+      }
     }
-    if (!best || best.val <= 0.1) return null;
-    const W = scen(state).cols;
-    best.toCR = [best.to % W, (best.to / W) | 0];
+    if (!best || best.val <= 0.1) {
+      // the commander moves last, once the line is settled, to stand behind it and out of reach
+      const cu = commander(state, side);
+      if (ctx.adjThreat && cu) {
+        const ui = idxOf(state, cu), cur = cmdScore(ctx, cu, ui);
+        let bi = ui, bv = cur;
+        for (const [k, v] of reachable(state, cu, { occ: ctx.occ })) {
+          if (!v.end || k === ui) continue;
+          ctx.occ[ui] = null; ctx.occ[k] = cu;
+          const sv = cmdScore(ctx, cu, k);
+          ctx.occ[k] = null; ctx.occ[ui] = cu;
+          if (sv > bv + 0.3) { bv = sv; bi = k; }
+        }
+        best = { kind: bi === ui ? 'hold' : 'move', unitId: cu.id, to: bi, val: bv - cur };
+      } else best = aiSpend(state, ctx);
+    }
+    if (!best) return null;
+    best.toCR = [best.to % W0, (best.to / W0) | 0];
     return best;
   }
 
   // Applies one AI decision. Returns a list of events for the UI to animate.
   function aiApply(state, act) {
+    if (act.kind === 'callup') {
+      const r = callup(state, act.to);
+      return r ? [{ kind: 'callup', unitId: r.unitId, at: act.toCR }] : [];
+    }
     const u = state.units.find(x => x.id === act.unitId);
+    if (act.kind === 'hold') { u.mp = 0; return []; }
+    if (act.kind === 'refit') {
+      const r = refit(state, u);
+      if (!r) u.mp = 0;
+      return r ? [{ kind: 'refit', unitId: u.id, gain: r.gain, at: act.toCR }] : [];
+    }
     const ev = [];
     const ui = idxOf(state, u);
     if (act.to !== ui) {
@@ -807,7 +1001,7 @@
   function serialize(state) { const o = Object.assign({}, state); delete o.lastEvents; return JSON.stringify(o); }
   function deserialize(json) {
     const s = JSON.parse(json);
-    if (!s || s.v !== 1 || !SCENARIOS[s.scenarioId]) throw new Error('Unrecognised save');
+    if (!s || s.v !== 2 || !SCENARIOS[s.scenarioId]) throw new Error('Unrecognised save');
     s.lastEvents = [];
     return s;
   }
@@ -816,7 +1010,7 @@
     SCENARIOS, TERRAIN, UNIT_TYPES, ELEV_NAMES, neighbour, hexDist, buildMap, newGame, live, unitAt, occupancy,
     reachable, pathTo, moveUnit, undoMove, canMove, canFire, targetsFrom, fireRange, forecast, attack,
     endSideTurn, vp, strength, clock, idxOf, mapOf, scen, aiNextAction, aiApply, aiPlayTurn, serialize, deserialize,
-    unitLabel, other,
+    unitLabel, other, AIP, isCmd, commander, incomeOf, supplyHexes, refitBlock, refit, callupHexes, callup, CMD_BONUS, CMD_LOST,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Engine = api;

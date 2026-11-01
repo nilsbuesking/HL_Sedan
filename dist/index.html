@@ -63,6 +63,20 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
   border-radius: 16px; background: var(--ink-2); border: 1px solid var(--ink-3); font-weight: 600; font-size: 14px; white-space: nowrap;
 }
 .side small { font-weight: 500; color: var(--chalk-2); font-size: 12px; }
+.side small:empty { display: none; }
+.res { display: inline-flex; align-items: center; gap: 4px; padding-left: 8px; border-left: 1px solid var(--ink-3); color: var(--brass); }
+.res svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.4; stroke-linejoin: round; }
+.res b { font-variant-numeric: tabular-nums; color: var(--chalk); font-weight: 600; }
+@media (max-width: 430px) {
+  #bar { gap: 8px; }
+  .turn { gap: 8px; }
+  .side small { display: none; }
+}
+@media (max-width: 390px) {
+  #bar { padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(8px, env(safe-area-inset-right, 0px)); }
+  .clock { font-size: 21px; }
+  .turn-n { letter-spacing: .06em; }
+}
 .flag { width: 20px; height: 14px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
 .flag.de { background: linear-gradient(var(--flag-black) 0 33.4%, var(--flag-white) 0 66.7%, var(--flag-red) 0); }
 .flag.fr { background: linear-gradient(90deg, var(--tricolour-blue) 0 33.4%, var(--flag-white) 0 66.7%, var(--flag-red) 0); }
@@ -108,6 +122,9 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
 .btn.warn { background: var(--garance); color: var(--flag-white); border-color: transparent; }
 .btn:disabled { opacity: .38; }
 .btn.wide { grid-column: span 2; }
+.btn.sm { min-height: 38px; font-size: 14px; padding: 0 12px; flex: none; }
+.spend { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--chalk-2); }
+.spend span { min-width: 0; }
 
 .ucard { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
 .mini { width: 46px; height: 36px; flex: none; }
@@ -212,6 +229,20 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
 .tally div { background: var(--ink-2); border-radius: var(--r); padding: 10px 12px; }
 .tally b { display: block; font: italic 700 30px/1.1 var(--f-display); font-variant-numeric: lining-nums; }
 .tally small { color: var(--chalk-2); font-size: 12px; }
+.steps { display: flex; gap: 6px; }
+.steps i { width: 18px; height: 3px; border-radius: 2px; background: var(--ink-3); }
+.steps i.on { background: var(--brass); }
+.intro .row { margin-top: 4px; }
+.intro .linkbtn { align-self: center; padding: 4px 0; }
+.cmdcard { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; align-items: center; background: var(--ink-2); border: 1px solid var(--ink-3); border-radius: 14px; padding: 14px; }
+.cmdcard figcaption b { display: block; font: italic 700 20px/1.15 var(--f-display); }
+.cmdcard figcaption small { display: block; color: var(--chalk-2); font-size: 13px; margin-top: 2px; }
+.cmdcard p { grid-column: 1 / -1; font-size: 14px; line-height: 1.45; }
+.cmdcard .ingame { color: var(--chalk); }
+.cmdcard .ingame em, .orders-k { font-style: normal; color: var(--brass); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; margin-right: 6px; }
+.orders { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.45; }
+.orders li::marker { color: var(--brass); }
+.ord-h { margin: 4px 0 -4px; display: flex; align-items: center; gap: 8px; font: italic 600 20px/1.2 var(--f-display); }
 .verdict-de { color: var(--bavaria); }
 .verdict-fr { color: var(--bad); }
 
@@ -237,7 +268,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
       <span class="turn-n">Turn <b id="turnNo">1</b>/<span id="turnMax">14</span></span>
       <span class="clock" id="clock">08:00</span>
     </div>
-    <div class="side" id="sidePill"><span class="flag de" id="sideFlag"></span><span id="sideName">Germans</span><small id="sideWho"></small></div>
+    <div class="side" id="sidePill"><span class="flag de" id="sideFlag"></span><span id="sideName">Germans</span><small id="sideWho"></small><span class="res" id="res" role="img" aria-label="Reserves"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6h12v8H2zM2 6l2-3h8l2 3M8 6v8M2 10h12"/></svg><b id="resN">0</b></span></div>
     <button class="icon-btn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   </header>
   <main id="stage">
@@ -285,7 +316,8 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     'w': { name: 'Woods', cost: { foot: 2, horse: 3, guns: 3 }, def: 1.5, cover: true },
     'g': { name: 'Vineyards', cost: { foot: 1.5, horse: 2, guns: 2 }, def: 1.25, cover: true },
     'v': { name: 'Village', cost: { foot: 1, horse: 1, guns: 1 }, def: 1.6, cover: true },
-    '~': { name: 'River Sauer', cost: { foot: 3, horse: 4, guns: null }, def: 0.6, water: true },
+    // On 6 August the Wörth bridge was down and infantry waded breast-deep (Moltke); horses and guns need a ford or bridge.
+    '~': { name: 'River Sauer', cost: { foot: 3, horse: null, guns: null }, def: 0.6, water: true },
     'f': { name: 'Ford', cost: { foot: 2, horse: 2, guns: 3 }, def: 0.75, water: true },
     'b': { name: 'Bridge', cost: { foot: 1, horse: 1, guns: 1 }, def: 0.9 },
   };
@@ -304,9 +336,12 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     cuir: { name: 'Cuirassiers', kit: 'Heavy cavalry; charges fail against cover', cls: 'horse', mv: 5, rng: [1, 1], att: { foot: 7, horse: 7, guns: 9 }, def: 4, zoc: true, sym: 'cav', value: 1 },
     art_fr: { name: 'Artillerie', kit: 'La Hitte muzzle-loaders; +1 range on heights', cls: 'guns', mv: 3, rng: [1, 2], att: { foot: 6, horse: 6, guns: 4 }, def: 3, zoc: false, mof: true, heightRange: true, sym: 'art', value: 1.2 },
     mitr: { name: 'Mitrailleuses', kit: 'Reffye volley guns; deadly to men, weak against guns', cls: 'guns', mv: 3, rng: [1, 2], att: { foot: 9, horse: 9, guns: 2 }, def: 3, zoc: false, mof: true, sym: 'mg', value: 1.1 },
+    // Commanders do not fire. rng [1, 0] gives an empty range, so every range loop skips them.
+    cmd: { name: 'Commander and staff', kit: 'Units next to him fire ×1.1; can be attacked only from next to him', cls: 'horse', mv: 5, rng: [1, 0], att: { foot: 0, horse: 0, guns: 0 }, def: 5, zoc: false, cmd: true, sym: 'cmd', value: 3 },
   };
 
   const K = 6; // firepower scale: expected losses = K * strength/10 * att / (att + def)
+  const CMD_BONUS = 1.1, CMD_LOST = 0.95;
 
   // ---------------------------------------------------------------- Scenario: Wörth, 6 August 1870
   function riverPath() {
@@ -385,18 +420,38 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
         { c: 4.4, r: 0.9, name: 'Hochwald' },
         { c: 10.15, r: 3.2, name: 'Sauer', river: true },
       ],
+      // Places that can be held. vp counts towards victory; inc is the reserves the holder draws each turn.
       objectives: [
-        { c: 4, r: 6, name: 'Froeschwiller', vp: 4, owner: 'fr' },
-        { c: 5, r: 8, name: 'Elsasshausen', vp: 2, owner: 'fr' },
-        { c: 9, r: 6, name: 'Wörth', vp: 1, owner: 'fr' },
-        { c: 7, r: 14, name: 'Morsbronn', vp: 1, owner: 'fr' },
-        { c: 5, r: 11, name: 'Niederwald', vp: 1, owner: 'fr' },
+        { c: 4, r: 6, name: 'Froeschwiller', vp: 4, inc: 2, owner: 'fr' },
+        { c: 5, r: 8, name: 'Elsasshausen', vp: 2, inc: 1, owner: 'fr' },
+        { c: 9, r: 6, name: 'Wörth', vp: 1, inc: 1, owner: 'fr' },
+        { c: 7, r: 14, name: 'Morsbronn', vp: 1, inc: 1, owner: 'fr' },
+        { c: 5, r: 11, name: 'Niederwald', vp: 1, inc: 1, owner: 'fr' },
+        { c: 0, r: 6, name: 'Reichshoffen', vp: 0, inc: 1, owner: 'fr' },
+        { c: 2, r: 2, name: 'Neehwiller', vp: 0, inc: 1, owner: 'fr' },
+        { c: 7, r: 2, name: 'Langensoultzbach', vp: 0, inc: 1, owner: 'de' },
+        { c: 13, r: 2, name: 'Görsdorf', vp: 0, inc: 1, owner: 'de' },
+        { c: 15, r: 6, name: 'Preuschdorf', vp: 0, inc: 1, owner: 'de' },
+        { c: 11, r: 9, name: 'Spachbach', vp: 0, inc: 1, owner: 'de' },
+        { c: 11, r: 12, name: 'Gunstett', vp: 0, inc: 1, owner: 'de' },
       ],
+      // Requisition: reserves (stragglers, detachments, ammunition columns) bought with income from held places.
+      reserves: {
+        base: { de: 0, fr: 0 },
+        refitCost: 4, refitAmt: 3, callupCost: 10, callupMax: { de: 5, fr: 2 },
+        callup: {
+          de: { nat: 'pr', type: 'inf_pr', name: 'Kombiniertes Bataillon', sub: 'Formed from detachments and stragglers', short: 'KB', str: 5 },
+          fr: { nat: 'fr', type: 'inf_fr', name: 'Bataillon de marche', sub: 'Formed from detachments and stragglers', short: 'BM', str: 5 },
+        },
+      },
       sides: {
         de: { name: 'German Third Army', short: 'Germans', commander: 'Crown Prince Friedrich Wilhelm', ai: 'attack' },
         fr: { name: 'Armée d’Alsace', short: 'French', commander: 'Maréchal de MacMahon', ai: 'defend' },
       },
       units: [
+        // ---- Commanders. The Crown Prince had ordered no battle for the 6th and reached the field at about 13:00.
+        { id: 'fr-mm', side: 'fr', nat: 'fr', type: 'cmd', name: 'Maréchal de MacMahon', sub: 'Commander · I Corps and the Armée d’Alsace', short: 'MM', c: 4, r: 5, str: 4 },
+        { id: 'de-kp', side: 'de', nat: 'pr', type: 'cmd', name: 'Kronprinz Friedrich Wilhelm', sub: 'Commander · III. Armee', short: 'KP', c: 15, r: 6, str: 4, arrive: 8 },
         // ---- French: I Corps (MacMahon) on the Froeschwiller ridge, with Conseil-Dumesnil's division of VII Corps
         { id: 'fr-d1', side: 'fr', nat: 'fr', type: 'inf_fr', name: '1re brigade', sub: 'Division Ducrot', short: 'D1', c: 4, r: 4 },
         { id: 'fr-d2', side: 'fr', nat: 'fr', type: 'inf_fr', name: '2e brigade', sub: 'Division Ducrot', short: 'D2', c: 6, r: 4 },
@@ -511,18 +566,91 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
   function newGame(scenarioId, players, seed) {
     const sc = SCENARIOS[scenarioId];
     const state = {
-      v: 1, scenarioId, turn: 1, side: sc.order[0], seed: (seed >>> 0) || ((Math.random() * 2 ** 31) | 0),
+      v: 2, scenarioId, turn: 1, side: sc.order[0], seed: (seed >>> 0) || ((Math.random() * 2 ** 31) | 0),
       players: players || { de: 'human', fr: 'ai' },
       control: sc.objectives.map(o => o.owner),
       units: sc.units.map(u => ({
         id: u.id, side: u.side, nat: u.nat, type: u.type, name: u.name, sub: u.sub, short: u.short,
         c: u.c, r: u.r, entry: [u.c, u.r], str: u.str || 10, max: u.str || 10, arrive: u.arrive || 0,
-        on: !u.arrive, dead: false, mp: 0, moved: false, fired: false, acted: false, engaged: false,
+        on: !u.arrive, dead: false, mp: 0, moved: false, fired: false, acted: false, engaged: false, refit: false,
       })),
+      res: { de: 0, fr: 0 }, income: { de: 0, fr: 0 }, callups: { de: 0, fr: 0 }, cmdLost: { de: false, fr: false },
       log: [], over: null, lastEvents: [],
     };
     startSideTurn(state);
     return state;
+  }
+
+  function isCmd(u) { return !!UNIT_TYPES[u.type].cmd; }
+  function commander(state, side) { return state.units.find(u => u.side === side && isCmd(u)) || null; }
+  function cmdAdjacent(state, s, sIdx) { // is s, standing at sIdx, next to its own commander?
+    const cu = commander(state, s.side);
+    if (!cu || !cu.on || cu.dead || cu.id === s.id) return false;
+    const W = scen(state).cols;
+    return hexDist(cu.c, cu.r, sIdx % W, (sIdx / W) | 0) === 1;
+  }
+
+  // ---------------------------------------------------------------- Places and reserves
+  function incomeOf(state, side) {
+    const sc = scen(state);
+    let n = (sc.reserves && sc.reserves.base[side]) || 0;
+    sc.objectives.forEach((o, i) => { if (state.control[i] === side) n += o.inc || 0; });
+    return n;
+  }
+  function supplyHexes(state, side) { // villages held by `side`: refits happen in or next to them
+    const sc = scen(state), map = mapOf(state), out = [];
+    sc.objectives.forEach((o, i) => { if (state.control[i] === side && map.ter[map.objIdx[i]] === 'v') out.push(map.objIdx[i]); });
+    return out;
+  }
+  function inContact(state, idx, side, occ) {
+    return mapOf(state).nbrs[idx].some(([, n]) => occ[n] && occ[n].side !== side);
+  }
+  // Returns null if the unit can refit now, otherwise a short reason.
+  function refitBlock(state, u) {
+    const R = scen(state).reserves;
+    if (!R || state.over || !u.on || u.dead || u.side !== state.side) return 'Not available';
+    if (u.refit) return 'Already refitted this turn';
+    if (u.fired) return 'Has fired this turn';
+    if (u.str >= u.max) return 'At full strength';
+    const map = mapOf(state), idx = idxOf(state, u), occ = occupancy(state);
+    if (u.engaged) return 'Under fire since your last turn';
+    if (inContact(state, idx, u.side, occ)) return 'Too close to the enemy';
+    const sup = supplyHexes(state, u.side);
+    if (!sup.some(v => v === idx || map.nbrs[v].some(([, n]) => n === idx))) return 'Not in or next to a village you hold';
+    if (state.res[u.side] < R.refitCost) return 'Needs ' + R.refitCost + ' reserves';
+    return null;
+  }
+  function refit(state, u) {
+    if (refitBlock(state, u)) return null;
+    const R = scen(state).reserves;
+    const gain = Math.min(R.refitAmt, u.max - u.str);
+    state.res[u.side] -= R.refitCost;
+    u.str += gain; u.refit = true; u.mp = 0; u.acted = true;
+    state.undo = null;
+    addLog(state, unitLabel(u) + ' refits: +' + gain + ' strength.', u.side);
+    return { gain, unitId: u.id };
+  }
+  function callupHexes(state, side) {
+    const R = scen(state).reserves;
+    if (!R || state.over || side !== state.side || state.callups[side] >= R.callupMax[side] || state.res[side] < R.callupCost) return [];
+    const occ = occupancy(state);
+    return supplyHexes(state, side).filter(i => !occ[i] && !inContact(state, i, side, occ));
+  }
+  function callup(state, idx) {
+    const side = state.side, sc = scen(state), R = sc.reserves;
+    if (!callupHexes(state, side).includes(idx)) return null;
+    const spec = R.callup[side], n = ++state.callups[side];
+    const u = {
+      id: side + '-x' + n, side, nat: spec.nat, type: spec.type, name: spec.name + ' ' + n, sub: spec.sub, short: spec.short + n,
+      c: idx % sc.cols, r: (idx / sc.cols) | 0, entry: [idx % sc.cols, (idx / sc.cols) | 0], str: spec.str, max: spec.str, arrive: 0,
+      on: true, dead: false, mp: 0, moved: true, fired: false, acted: true, engaged: false, refit: false, forming: true, raised: true,
+    };
+    state.units.push(u);
+    state.res[side] -= R.callupCost;
+    state.undo = null;
+    const place = sc.objectives[mapOf(state).objIdx.indexOf(idx)];
+    addLog(state, u.name + ' is formed at ' + place.name + '.', side);
+    return { unitId: u.id };
   }
 
   function live(state, side) { return state.units.filter(u => u.on && !u.dead && (!side || u.side === side)); }
@@ -620,7 +748,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
   }
 
   function canMove(u) { return u.on && !u.dead && !u.fired && u.mp > 0; }
-  function canFire(u) { return u.on && !u.dead && !u.fired && !(UNIT_TYPES[u.type].mof && u.moved); }
+  function canFire(u) { return u.on && !u.dead && !u.fired && !u.refit && !u.forming && !UNIT_TYPES[u.type].cmd && !(UNIT_TYPES[u.type].mof && u.moved); }
 
   function moveUnit(state, u, c, r) {
     if (state.over || u.side !== state.side || !canMove(u)) return null;
@@ -636,7 +764,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     if (info.stop) u.mp = 0; // entering an enemy zone of control ends movement
     u.moved = true; u.acted = true;
     const oi = map.objIdx.indexOf(to);
-    if (oi >= 0 && state.control[oi] !== u.side) {
+    if (oi >= 0 && state.control[oi] !== u.side && !isCmd(u)) { // a commander's staff does not garrison a place
       state.control[oi] = u.side;
       addLog(state, unitLabel(u) + ' takes ' + sc.objectives[oi].name + '.', 'capture');
     }
@@ -671,7 +799,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     const [lo, hi] = fireRange(state, u, idx), out = [];
     for (let d = lo; d <= hi; d++) for (const j of map.rings[idx][d]) {
       const e = occ[j];
-      if (e && e.side !== u.side) out.push(e);
+      if (e && e.side !== u.side && (d === 1 || !isCmd(e))) out.push(e); // commanders can be attacked only from next to them
     }
     return out;
   }
@@ -686,6 +814,8 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     if (S.cls === 'horse' && tt.cover && !counter) { a *= 0.5; mods.push('Charge into cover ×0.5'); }
     if (S.cls === 'foot' && d >= 2) { a *= 0.9; mods.push('Long range ×0.9'); }
     if (S.elite && d === 1 && !counter) { a *= 1.2; mods.push('Élan ×1.2'); }
+    if (cmdAdjacent(state, s, sIdx)) { a *= CMD_BONUS; mods.push('Commander at hand ×' + CMD_BONUS); }
+    if (state.cmdLost && state.cmdLost[s.side]) { a *= CMD_LOST; mods.push('Commander lost ×' + CMD_LOST); }
     let df = Tt.def * tt.def;
     if (tt.def > 1) mods.push(tt.name + ' cover ×' + tt.def);
     if (tt.def < 1) mods.push('Target in ' + tt.name.toLowerCase() + ' ×' + tt.def);
@@ -744,11 +874,16 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     if (lost) u.dead = true;
     let txt = unitLabel(u) + ' engages ' + unitLabel(t) + ': −' + dmg;
     if (countered) txt += ', return fire −' + back;
-    if (killed) txt += '. ' + unitLabel(t) + ' is broken';
+    if (killed) txt += '. ' + unitLabel(t) + (isCmd(t) ? ' has fallen' : ' is broken');
     if (lost) txt += '. ' + unitLabel(u) + ' is broken';
     addLog(state, txt + '.', u.side);
+    let cmdFell = null;
+    if (killed && isCmd(t)) {
+      state.cmdLost[t.side] = true; cmdFell = t.side;
+      addLog(state, 'The ' + scen(state).sides[t.side].short + ' have lost their commander. Their fire is ×' + CMD_LOST + ' for the rest of the day.', 'end');
+    }
     checkCollapse(state);
-    return { dmg, back, countered, killed, lost, from: [u.c, u.r], to: [t.c, t.r], attackerId: u.id, targetId: t.id };
+    return { dmg, back, countered, killed, lost, cmdFell, from: [u.c, u.r], to: [t.c, t.r], attackerId: u.id, targetId: t.id };
   }
 
   // ---------------------------------------------------------------- Turn flow and victory
@@ -779,11 +914,12 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
         if (i >= 0) { u.c = i % sc.cols; u.r = (i / sc.cols) | 0; u.on = true; occ[i] = u; arrived.push(u); }
       }
       if (u.on && !u.dead) {
-        u.mp = UNIT_TYPES[u.type].mv; u.moved = false; u.fired = false; u.acted = false;
+        u.mp = UNIT_TYPES[u.type].mv; u.moved = false; u.fired = false; u.acted = false; u.refit = false; u.forming = false;
       }
     }
     for (const u of arrived) addLog(state, unitLabel(u) + ' arrives on the field.', 'arrive');
     state.arrivals = arrived.map(u => u.id);
+    if (sc.reserves) { const inc = incomeOf(state, state.side); state.res[state.side] += inc; state.income[state.side] = inc; }
     state.undo = null;
   }
 
@@ -813,7 +949,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
   function strength(state, side) {
     let now = 0, committed = 0;
     for (const u of state.units) {
-      if (u.side !== side || (!u.on && !u.dead)) continue;
+      if (u.side !== side || (!u.on && !u.dead) || isCmd(u)) continue;
       committed += u.max;
       if (!u.dead) now += u.str;
     }
@@ -843,8 +979,8 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
 
   // ---------------------------------------------------------------- AI
   const AIP = {
-    attack: { cover: 1.2, fear: 0.45, pull: 1.1, capture: 3, garrison: 1.0, fireProspect: 0.45, caution: 0.7, support: 0.5 },
-    defend: { cover: 2.0, fear: 0.9, hold: 0.9, radius: 2, retake: 0.5, garrison: 2.2, fireProspect: 0.4, caution: 1.0, support: 0.3 },
+    attack: { cover: 1.2, fear: 0.45, pull: 1.1, capture: 3, garrison: 1.0, fireProspect: 0.45, caution: 0.7, support: 0.5, refit: 0.3 },
+    defend: { cover: 2.0, fear: 0.9, hold: 0.9, radius: 2, retake: 0.5, garrison: 2.2, fireProspect: 0.4, caution: 1.0, support: 0.3, refit: 0.6 },
   };
 
   const fieldCache = {};
@@ -877,21 +1013,28 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     const enemies = live(state, other(side));
     const threat = Array.from({ length: map.N }, () => []);
     const zocMine = zocSet(state, other(side), occ); // ZOC that my units exert on the enemy
+    // adjThreat: enemies that could stand next to a hex after their next move; only a commander needs it
+    const myCmd = commander(state, side);
+    const needAdj = myCmd && myCmd.on && !myCmd.dead && canMove(myCmd) && !myCmd.moved;
+    const adjThreat = needAdj ? Array.from({ length: map.N }, () => []) : null;
     for (const e of enemies) {
       const T = UNIT_TYPES[e.type], ei = idxOf(state, e);
+      e._hit = new Set();
+      if (T.cmd) continue;
       let positions = [ei];
       if (!T.mof) {
         const R = reachable(state, e, { fresh: true, occ, zoc: zocMine });
         positions = [];
         for (const [k, v] of R) if (v.end || k === ei) positions.push(k);
       }
-      const hit = new Set();
+      const hit = e._hit, adj = needAdj ? new Set() : null;
       for (const p of positions) {
         const [lo, hi] = fireRange(state, e, p);
         for (let d = lo; d <= hi; d++) for (const j of map.rings[p][d]) hit.add(j);
+        if (adj) for (const [, n] of map.nbrs[p]) adj.add(n);
       }
       for (const h of hit) threat[h].push(e);
-      e._hit = hit;
+      if (adj) for (const h of adj) adjThreat[h].push(e);
     }
     // how many of my units each enemy can choose between: its fire is shared out among them
     const mine = live(state, side);
@@ -902,8 +1045,28 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
       delete e._hit;
     }
     const posture = AIP[sc.sides[side].ai];
-    return { state, side, map, sc, occ, enemies, threat, P: posture, mode: sc.sides[side].ai };
+    return { state, side, map, sc, occ, enemies, threat, adjThreat, P: posture, mode: sc.sides[side].ai };
   }
+
+  // Where should the commander stand? Next to units that will fire, never where the enemy can reach him.
+  function cmdScore(ctx, u, idx) {
+    const { state, map, occ } = ctx;
+    let s = 0;
+    for (const [, n] of map.nbrs[idx]) { const o = occ[n]; if (o && o.side !== u.side) return -100; }
+    for (const e of ctx.adjThreat[idx]) s -= 10 * (e.str / 10) * (UNIT_TYPES[e.type].cls === 'guns' ? 0.5 : 1);
+    for (const [, n] of map.nbrs[idx]) {
+      const o = occ[n];
+      if (!o || o.side !== u.side || isCmd(o)) continue;
+      const T = UNIT_TYPES[o.type];
+      const has = targetsFrom(state, o, n, occ).length > 0;
+      s += (has ? 1.6 : 0.5) * (T.cls === 'guns' ? 1.3 : 1) * (o.str / 10);
+    }
+    const oi = map.objIdx.indexOf(idx);
+    if (oi >= 0) s -= 1.5 * ctx.sc.objectives[oi].vp; // leave the key places to the infantry
+    return s;
+  }
+
+  function placeWorth(o) { return o.vp + 0.6 * (o.inc || 0); }
 
   function incoming(ctx, u, idx) {
     const list = ctx.threat[idx];
@@ -931,7 +1094,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     for (const [, n] of map.nbrs[idx]) {
       const o = ctx.occ[n];
       if (!o || o === u) continue;
-      if (o.side === u.side) { if (UNIT_TYPES[o.type].cls !== 'guns') friends++; } else enemyAdj++;
+      if (o.side === u.side) { if (UNIT_TYPES[o.type].cls !== 'guns' && !isCmd(o)) friends++; } else enemyAdj++;
     }
     s += P.support * Math.min(friends, 3);
     if (T.cls === 'guns' && enemyAdj) s -= 3 * enemyAdj;
@@ -940,33 +1103,34 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
       const [lo, hi] = fireRange(state, u, idx);
       for (let d = lo; d <= hi; d++) for (const j of map.rings[idx][d]) {
         const e = ctx.occ[j];
-        if (e && e.side !== u.side) best = Math.max(best, fireExpect(state, u, idx, e, j, false).exp * UNIT_TYPES[e.type].value);
+        if (e && e.side !== u.side && (d === 1 || !isCmd(e))) best = Math.max(best, fireExpect(state, u, idx, e, j, false).exp * UNIT_TYPES[e.type].value);
       }
       s += P.fireProspect * best;
     }
-    // objectives
+    // places: victory objectives pull the army; any held place is worth occupying for its income
     const objs = sc.objectives;
     const oi = map.objIdx.indexOf(idx);
     if (ctx.mode === 'attack') {
       let best = Infinity;
       objs.forEach((o, k) => {
-        if (state.control[k] === u.side) return;
+        if (state.control[k] === u.side || !o.vp) return;
         const f = costField(state, T.cls, map.objIdx[k])[idx];
         best = Math.min(best, f / (0.7 + 0.15 * o.vp));
       });
       if (isFinite(best)) s -= P.pull * urgency * best * (T.cls === 'guns' ? 0.5 : 1);
-      if (oi >= 0 && T.cls === 'foot') s += (state.control[oi] === u.side ? P.garrison : P.capture) * objs[oi].vp;
-      else if (oi >= 0 && state.control[oi] !== u.side) s += P.capture * objs[oi].vp * 0.5;
+      if (oi >= 0 && T.cls === 'foot') s += (state.control[oi] === u.side ? P.garrison * objs[oi].vp : P.capture * placeWorth(objs[oi]));
+      else if (oi >= 0 && state.control[oi] !== u.side) s += P.capture * placeWorth(objs[oi]) * 0.5;
     } else {
       let hold = Infinity, retake = Infinity;
       objs.forEach((o, k) => {
+        if (!o.vp) return;
         const f = costField(state, T.cls, map.objIdx[k])[idx];
         if (state.control[k] === u.side) hold = Math.min(hold, f);
         else if (o.vp >= 2) retake = Math.min(retake, f / o.vp);
       });
       if (isFinite(hold)) s -= P.hold * Math.max(0, hold - P.radius);
       if (isFinite(retake)) s -= P.retake * urgency * retake;
-      if (oi >= 0 && T.cls === 'foot') s += (state.control[oi] === u.side ? P.garrison : 3) * objs[oi].vp;
+      if (oi >= 0 && T.cls === 'foot') s += (state.control[oi] === u.side ? P.garrison * objs[oi].vp : 3 * placeWorth(objs[oi]));
     }
     return s;
   }
@@ -984,17 +1148,48 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     let v = dmg * ve * (1 + 0.5 * dmg / Math.max(1, e.str)) + (kill ? 0.6 * e.str * ve : 0) - back * vu * P.caution;
     const oi = map.objIdx.indexOf(eIdx);
     if (oi >= 0 && kill) v += ctx.sc.objectives[oi].vp;
+    if (isCmd(e)) v += kill ? 6 : 1.5; // striking at the enemy commander
     return v;
+  }
+
+  function aiSpend(state, ctx) {
+    const R = ctx.sc.reserves;
+    if (!R) return null;
+    const side = ctx.side, map = ctx.map, W = ctx.sc.cols;
+    const hexes = callupHexes(state, side);
+    if (hexes.length) {
+      const foes = live(state, other(side)).map(e => idxOf(state, e));
+      let bi = -1, bv = -Infinity;
+      for (const h of hexes) {
+        let dmin = 99;
+        for (const f of foes) dmin = Math.min(dmin, hexDist(h % W, (h / W) | 0, f % W, (f / W) | 0));
+        const o = ctx.sc.objectives[map.objIdx.indexOf(h)];
+        const v = -Math.abs(dmin - 3) + 0.5 * o.vp;
+        if (v > bv) { bv = v; bi = h; }
+      }
+      if (bi >= 0) return { kind: 'callup', to: bi, val: 1 };
+    }
+    let bu = null, bv = 0;
+    for (const u of live(state, side)) {
+      if (refitBlock(state, u)) continue;
+      const gain = Math.min(R.refitAmt, u.max - u.str);
+      if (gain < 2 && !isCmd(u)) continue;
+      const v = gain * UNIT_TYPES[u.type].value;
+      if (v > bv) { bv = v; bu = u; }
+    }
+    if (bu) return { kind: 'refit', unitId: bu.id, to: idxOf(state, bu), val: 1 };
+    return null;
   }
 
   function aiNextAction(state) {
     if (state.over) return null;
     const side = state.side;
     const ctx = aiContext(state, side);
+    const W0 = scen(state).cols;
     let best = null;
     const consider = (val, act) => { if (!best || val > best.val) best = Object.assign({ val }, act); };
     for (const u of live(state, side)) {
-      if (!canMove(u) && !canFire(u)) continue;
+      if (isCmd(u) || (!canMove(u) && !canFire(u))) continue;
       const T = UNIT_TYPES[u.type], ui = idxOf(state, u);
       const cur = posScore(ctx, u, ui);
       const opts = [ui];
@@ -1015,22 +1210,52 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
           const [lo, hi] = fireRange(state, u, idx);
           for (let d = lo; d <= hi; d++) for (const j of ctx.map.rings[idx][d]) {
             const e = ctx.occ[j];
-            if (!e || e.side === side) continue;
+            if (!e || e.side === side || (d > 1 && isCmd(e))) continue;
             consider(mv + attackValue(ctx, u, idx, e, j), { kind: 'attack', unitId: u.id, to: idx, targetId: e.id });
           }
         }
         if (idx !== ui && mv > 0.15) consider(mv, { kind: 'move', unitId: u.id, to: idx });
       }
+      // refitting where it stands, instead of firing, for a worn unit out of contact
+      if (ctx.sc.reserves && !refitBlock(state, u)) {
+        const gain = Math.min(ctx.sc.reserves.refitAmt, u.max - u.str);
+        if (gain >= 2) consider(ctx.P.refit * gain * T.value * (0.8 + 1.2 * (1 - u.str / u.max)), { kind: 'refit', unitId: u.id, to: ui });
+      }
     }
-    if (!best || best.val <= 0.1) return null;
-    const W = scen(state).cols;
-    best.toCR = [best.to % W, (best.to / W) | 0];
+    if (!best || best.val <= 0.1) {
+      // the commander moves last, once the line is settled, to stand behind it and out of reach
+      const cu = commander(state, side);
+      if (ctx.adjThreat && cu) {
+        const ui = idxOf(state, cu), cur = cmdScore(ctx, cu, ui);
+        let bi = ui, bv = cur;
+        for (const [k, v] of reachable(state, cu, { occ: ctx.occ })) {
+          if (!v.end || k === ui) continue;
+          ctx.occ[ui] = null; ctx.occ[k] = cu;
+          const sv = cmdScore(ctx, cu, k);
+          ctx.occ[k] = null; ctx.occ[ui] = cu;
+          if (sv > bv + 0.3) { bv = sv; bi = k; }
+        }
+        best = { kind: bi === ui ? 'hold' : 'move', unitId: cu.id, to: bi, val: bv - cur };
+      } else best = aiSpend(state, ctx);
+    }
+    if (!best) return null;
+    best.toCR = [best.to % W0, (best.to / W0) | 0];
     return best;
   }
 
   // Applies one AI decision. Returns a list of events for the UI to animate.
   function aiApply(state, act) {
+    if (act.kind === 'callup') {
+      const r = callup(state, act.to);
+      return r ? [{ kind: 'callup', unitId: r.unitId, at: act.toCR }] : [];
+    }
     const u = state.units.find(x => x.id === act.unitId);
+    if (act.kind === 'hold') { u.mp = 0; return []; }
+    if (act.kind === 'refit') {
+      const r = refit(state, u);
+      if (!r) u.mp = 0;
+      return r ? [{ kind: 'refit', unitId: u.id, gain: r.gain, at: act.toCR }] : [];
+    }
     const ev = [];
     const ui = idxOf(state, u);
     if (act.to !== ui) {
@@ -1065,7 +1290,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
   function serialize(state) { const o = Object.assign({}, state); delete o.lastEvents; return JSON.stringify(o); }
   function deserialize(json) {
     const s = JSON.parse(json);
-    if (!s || s.v !== 1 || !SCENARIOS[s.scenarioId]) throw new Error('Unrecognised save');
+    if (!s || s.v !== 2 || !SCENARIOS[s.scenarioId]) throw new Error('Unrecognised save');
     s.lastEvents = [];
     return s;
   }
@@ -1074,7 +1299,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     SCENARIOS, TERRAIN, UNIT_TYPES, ELEV_NAMES, neighbour, hexDist, buildMap, newGame, live, unitAt, occupancy,
     reachable, pathTo, moveUnit, undoMove, canMove, canFire, targetsFrom, fireRange, forecast, attack,
     endSideTurn, vp, strength, clock, idxOf, mapOf, scen, aiNextAction, aiApply, aiPlayTurn, serialize, deserialize,
-    unitLabel, other,
+    unitLabel, other, AIP, isCmd, commander, incomeOf, supplyHexes, refitBlock, refit, callupHexes, callup, CMD_BONUS, CMD_LOST,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Engine = api;
@@ -1087,7 +1312,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
   'use strict';
   const E = window.Engine;
   const SC_ID = 'woerth';
-  const SAVE_KEY = 'woerth1870.save.v1', PREF_KEY = 'woerth1870.prefs.v1';
+  const SAVE_KEY = 'woerth1870.save.v2', PREF_KEY = 'woerth1870.prefs.v1';
   const sc = E.SCENARIOS[SC_ID];
   const MAP = E.buildMap(sc);
   const S = 30, SQ3 = Math.sqrt(3), MARGIN = 34;
@@ -1458,18 +1683,18 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     ctx.restore();
   }
 
-  function drawObjectives() {
+  function drawObjectives() { // every holdable place gets a flag; victory objectives also a VP medallion
     const st = G.state;
     sc.objectives.forEach((o, k) => {
       const [x, y] = center(o.c, o.r);
-      const owner = st.control[k];
+      const owner = st.control[k], big = o.vp > 0, f = big ? 1 : 0.7;
       const px = x + S * 0.5, py = y - S * 0.5;
-      ctx.strokeStyle = C.frame; ctx.lineWidth = 1.3;
-      ctx.beginPath(); ctx.moveTo(px, py + 9); ctx.lineTo(px, py - 11); ctx.stroke();
+      ctx.strokeStyle = C.frame; ctx.lineWidth = big ? 1.3 : 1.1;
+      ctx.beginPath(); ctx.moveTo(px, py + (big ? 9 : 4)); ctx.lineTo(px, py - 11 * f); ctx.stroke();
       ctx.fillStyle = C.sideCol[owner];
-      ctx.beginPath(); ctx.moveTo(px, py - 11); ctx.lineTo(px + 14, py - 7.5); ctx.lineTo(px, py - 4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(px, py - 11 * f); ctx.lineTo(px + 14 * f, py - 7.5 * f); ctx.lineTo(px, py - 4 * f); ctx.closePath(); ctx.fill();
       ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 0.6; ctx.stroke();
-      // VP medallion
+      if (!big) return;
       ctx.fillStyle = '#f2ecd9'; ctx.strokeStyle = C.frame; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(px, py + 11, 5.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = C.frame; ctx.font = '700 8px ' + FONT_UI; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1523,6 +1748,15 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
       }
     }
     if (G.pending) requestDraw();
+    if (u && E.isCmd(u)) { // command radius: the six hexes whose units fire better
+      for (let d = 0; d < 6; d++) {
+        const [nc, nr] = E.neighbour(u.c, u.r, d);
+        if (nc < 0 || nr < 0 || nc >= sc.cols || nr >= sc.rows) continue;
+        const [x, y] = center(nc, nr);
+        hexPath(ctx, x, y, S - 3);
+        ctx.setLineDash([3, 3]); ctx.strokeStyle = C.brass; ctx.lineWidth = 1.8; ctx.stroke(); ctx.setLineDash([]);
+      }
+    }
     if (u) {
       const [x, y] = center(u.c, u.r);
       hexPath(ctx, x, y, S - 0.5);
@@ -1557,11 +1791,15 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     ctx.fillStyle = C.bandLine[u.nat]; ctx.fillRect(rx, ry + h * 0.17, w, 1.1);
     ctx.restore();
     ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 0.9; roundRect(rx, ry, w, h, 3.5); ctx.stroke();
+    if (T.cmd) { ctx.strokeStyle = C.brass; ctx.lineWidth = 1.8; roundRect(rx + 1, ry + 1, w - 2, h - 2, 3); ctx.stroke(); }
     // NATO-style symbol
     const ink = C.ink[u.nat];
     const bw = w * 0.44, bh = h * 0.42, bx = rx + w * 0.1, by = ry + h * 0.3;
     ctx.strokeStyle = ink; ctx.fillStyle = ink; ctx.lineWidth = 1.2;
-    ctx.strokeRect(bx, by, bw, bh);
+    if (T.cmd) { // commander's pennant on a staff
+      ctx.beginPath(); ctx.moveTo(bx + 2, by + bh + 2); ctx.lineTo(bx + 2, by - 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx + 2, by - 2); ctx.lineTo(bx + bw, by - 2); ctx.lineTo(bx + bw - 4, by + bh * 0.3); ctx.lineTo(bx + bw, by + bh * 0.62); ctx.lineTo(bx + 2, by + bh * 0.62); ctx.closePath(); ctx.fill();
+    } else ctx.strokeRect(bx, by, bw, bh);
     ctx.beginPath();
     if (T.sym === 'inf' || T.sym === 'jaeger') { ctx.moveTo(bx, by); ctx.lineTo(bx + bw, by + bh); ctx.moveTo(bx + bw, by); ctx.lineTo(bx, by + bh); }
     if (T.sym === 'cav') { ctx.moveTo(bx, by + bh); ctx.lineTo(bx + bw, by); }
@@ -1736,15 +1974,44 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     G.busy = true; G.pending = null; G.reach = null; G.targets = []; renderCard();
     await animAttack(res);
     G.busy = false;
-    if (res.killed) toast(E.unitLabel(t) + ' is broken.');
+    if (res.cmdFell) toast(t.name + ' has fallen. The ' + sc.sides[res.cmdFell].short + ' fire ×' + E.CMD_LOST + ' for the rest of the day.', 4200);
+    else if (res.killed) toast(E.unitLabel(t) + ' is broken.');
     else if (res.lost) toast(E.unitLabel(u) + ' is broken.');
     save(); refreshSel(); renderCard(); requestDraw(); updateBar();
     if (G.state.over) showResult();
   }
 
+  function floatAt(c, r, text, color) {
+    const [x, y] = center(c, r), now = performance.now();
+    G.effects.push({ kind: 'float', x, y: y - S * 0.3, t0: now, dur: 1100 * Math.max(speed(), 0.6), text, color });
+    requestDraw();
+  }
+
+  function doRefit(u) {
+    if (!humanTurn() || G.busy) return;
+    const r = E.refit(G.state, u);
+    if (!r) return;
+    floatAt(u.c, u.r, '+' + r.gain, '#2f6b2a');
+    toast(E.unitLabel(u) + ' refits: +' + r.gain + ' strength.');
+    save(); refreshSel(); renderCard(); requestDraw(); updateBar();
+  }
+
+  function doCallup(c, r) {
+    if (!humanTurn() || G.busy) return;
+    const res = E.callup(G.state, r * sc.cols + c);
+    if (!res) return;
+    const u = unitById(res.unitId);
+    G.effects.push({ kind: 'flash', x: center(c, r)[0], y: center(c, r)[1], t0: performance.now(), dur: 400 });
+    floatAt(c, r, 'Formed', '#2f6b2a');
+    toast(u.name + ' is formed. It can move from next turn.');
+    save(); updateBar(); select(u.id);
+  }
+
   function announceCaptures(before) {
     sc.objectives.forEach((o, k) => {
-      if (before[k] !== G.state.control[k]) toast(o.name + ' taken by the ' + sc.sides[G.state.control[k]].short + ' (' + o.vp + ' VP).');
+      if (before[k] === G.state.control[k]) return;
+      const who = sc.sides[G.state.control[k]].short;
+      toast(o.name + ' taken by the ' + who + (o.vp ? ' (' + o.vp + ' VP).' : ' (+' + o.inc + ' reserves a turn).'));
     });
   }
 
@@ -1796,7 +2063,10 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     const st = G.state;
     const arr = (st.arrivals || []).map(id => unitById(id)).filter(Boolean);
     let msg = 'Turn ' + st.turn + ' · ' + E.clock(st) + '. ' + sc.sides[st.side].short + ' to move.';
-    if (arr.length) msg += ' Arriving: ' + arr.map(u => u.short).join(', ') + '.';
+    if (st.income[st.side]) msg += ' Reserves +' + st.income[st.side] + ', now ' + st.res[st.side] + '.';
+    const cmdArr = arr.find(u => E.isCmd(u));
+    if (cmdArr) msg += ' ' + cmdArr.name + ' has reached the field.';
+    else if (arr.length) msg += ' Arriving: ' + arr.map(u => u.short).join(', ') + '.';
     toast(msg, 3200);
     const mine = E.live(st, st.side);
     if (arr.length) { const [x, y] = center(arr[0].c, arr[0].r); panTo(x, y, 400); }
@@ -1816,8 +2086,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     while (!st.over && st.side === side && guard++ < 240) {
       const act = E.aiNextAction(st);
       if (!act) break;
-      const u = unitById(act.unitId);
-      await follow(u.c, u.r);
+      if (act.kind !== 'hold') await follow(act.kind === 'callup' ? act.toCR[0] : unitById(act.unitId).c, act.kind === 'callup' ? act.toCR[1] : unitById(act.unitId).r);
       const before = st.control.slice();
       const evs = E.aiApply(st, act);
       for (const ev of evs) {
@@ -1827,6 +2096,15 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
         } else if (ev.kind === 'attack') {
           await follow(ev.to[0], ev.to[1]);
           await animAttack(ev);
+          if (ev.cmdFell) toast(unitById(ev.targetId).name + ' has fallen. The ' + sc.sides[ev.cmdFell].short + ' fire ×' + E.CMD_LOST + ' for the rest of the day.', 4200);
+        } else if (ev.kind === 'refit') {
+          floatAt(ev.at[0], ev.at[1], '+' + ev.gain, '#2f6b2a');
+          await sleep(450 * speed());
+        } else if (ev.kind === 'callup') {
+          const [x, y] = center(ev.at[0], ev.at[1]);
+          G.effects.push({ kind: 'flash', x, y, t0: performance.now(), dur: 400 * speed() });
+          floatAt(ev.at[0], ev.at[1], 'Formed', '#2f6b2a');
+          await sleep(550 * speed());
         }
       }
       announceCaptures(before);
@@ -1846,15 +2124,16 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     const fill = { pr: 'var(--prussian)', bv: 'var(--bavaria)', wu: 'var(--prussian)', fr: 'var(--garance)' }[u.nat];
     const band = { pr: 'var(--flag-black)', bv: 'var(--flag-white)', wu: 'var(--flag-black)', fr: 'var(--tricolour-blue)' }[u.nat];
     const ink = u.nat === 'bv' ? 'var(--ink)' : 'var(--flag-white)';
-    let sym = '';
-    if (T.sym === 'inf' || T.sym === 'jaeger') sym = '<path d="M5 12 L21 24 M21 12 L5 24"/>';
-    if (T.sym === 'cav') sym = '<path d="M5 24 L21 12"/>';
+    let sym = '<rect x="5" y="12" width="16" height="12"/>';
+    if (T.sym === 'inf' || T.sym === 'jaeger') sym += '<path d="M5 12 L21 24 M21 12 L5 24"/>';
+    if (T.sym === 'cav') sym += '<path d="M5 24 L21 12"/>';
     if (T.sym === 'jaeger') sym += '<path d="M10 11 A3 3 0 0 1 16 11"/>';
-    if (T.sym === 'art') sym = '<circle cx="13" cy="18" r="2.6" style="fill:' + ink + '"/>';
-    if (T.sym === 'mg') sym = '<circle cx="13" cy="18" r="2.2" style="fill:' + ink + '"/><path d="M8 15v6M18 15v6"/>';
-    return '<svg class="mini" viewBox="0 0 46 36" aria-hidden="true"><rect x="1" y="1" width="44" height="34" rx="4" style="fill:' + fill + ';stroke:rgba(0,0,0,.5)"/>' +
+    if (T.sym === 'art') sym += '<circle cx="13" cy="18" r="2.6" style="fill:' + ink + '"/>';
+    if (T.sym === 'mg') sym += '<circle cx="13" cy="18" r="2.2" style="fill:' + ink + '"/><path d="M8 15v6M18 15v6"/>';
+    if (T.sym === 'cmd') sym = '<path d="M7 27V10"/><path d="M7 10h14l-4 4 4 4H7z" style="fill:' + ink + '"/>';
+    return '<svg class="mini" viewBox="0 0 46 36" aria-hidden="true"><rect x="1" y="1" width="44" height="34" rx="4" style="fill:' + fill + ';stroke:' + (T.cmd ? 'var(--brass);stroke-width:2' : 'rgba(0,0,0,.5)') + '"/>' +
       '<path d="M5 1h36a4 4 0 0 1 4 4v1.5H1V5a4 4 0 0 1 4-4z" style="fill:' + band + '"/>' +
-      '<g style="stroke:' + ink + ';fill:none;stroke-width:1.4"><rect x="5" y="12" width="16" height="12"/>' + sym + '</g>' +
+      '<g style="stroke:' + ink + ';fill:none;stroke-width:1.4">' + sym + '</g>' +
       '<text x="35" y="23" text-anchor="middle" style="fill:' + ink + ';font:700 13px var(--f-ui)">' + u.str + '</text></svg>';
   }
   function meter(u) {
@@ -1897,18 +2176,27 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
       const mine = u.side === st.side && humanTurn();
       const enemy = st.players[u.side] !== 'human' || (bothHuman() && u.side !== st.side);
       let status = '';
-      if (mine) status = !u.moved && !u.fired ? '<span class="tag ready">Ready</span>' : u.fired ? '<span class="tag">Fired</span>' : (E.canMove(u) || E.canFire(u)) ? '<span class="tag">Moved</span>' : '<span class="tag">Spent</span>';
+      if (mine) status = u.forming ? '<span class="tag">Forming</span>' : u.refit ? '<span class="tag">Refitted</span>' : !u.moved && !u.fired ? '<span class="tag ready">Ready</span>' : u.fired ? '<span class="tag">Fired</span>' : (E.canMove(u) || E.canFire(u)) ? '<span class="tag">Moved</span>' : '<span class="tag">Spent</span>';
       else if (enemy) status = '<span class="tag enemy ' + u.side + '">' + (u.side === 'de' ? 'German' : 'French') + '</span>';
       const rng = E.fireRange(st, u, E.idxOf(st, u));
       html = '<div class="ucard">' + counterSVG(u) +
         '<div style="min-width:0"><div class="u-name">' + esc(u.name) + status + '</div><div class="u-sub">' + esc(u.sub || '') + '</div>' + meter(u) + '</div>' +
-        '<div class="u-str"><b>' + u.str + '</b><small>of ' + u.max + '</small></div></div>' +
-        '<div class="facts"><span><em>Move</em>' + (mine ? fmtMp(u.mp) + '/' : '') + T.mv + '</span><span><em>Range</em>' + (rng[0] === rng[1] ? rng[0] : rng[0] + '–' + rng[1]) + '</span>' +
-        '<span><em>Fire</em>' + T.att.foot + '·' + T.att.horse + '·' + T.att.guns + '</span><span><em>Def</em>' + T.def + '</span></div>' +
-        '<div class="where">' + esc(T.name) + ' — <i>' + esc(T.kit) + '</i>. ' + terrainLine(u.c, u.r) + '</div>';
-      if (mine && !E.canMove(u) && !E.canFire(u)) html += '<div class="hint">This unit has done all it can this turn.</div>';
+        '<div class="u-str"><b>' + u.str + '</b><small>of ' + u.max + '</small></div></div>';
+      if (T.cmd) {
+        html += '<div class="facts"><span><em>Move</em>' + (mine ? fmtMp(u.mp) + '/' : '') + T.mv + '</span><span><em>Command</em>next to him ×' + E.CMD_BONUS + '</span><span><em>Def</em>' + T.def + '</span></div>' +
+          '<div class="where">Does not fire. Only a unit next to him can attack him; if he falls, his army fires ×' + E.CMD_LOST + ' for the rest of the day. ' + terrainLine(u.c, u.r) + '</div>';
+      } else {
+        html += '<div class="facts"><span><em>Move</em>' + (mine ? fmtMp(u.mp) + '/' : '') + T.mv + '</span><span><em>Range</em>' + (rng[0] === rng[1] ? rng[0] : rng[0] + '–' + rng[1]) + '</span>' +
+          '<span><em>Fire</em>' + T.att.foot + '·' + T.att.horse + '·' + T.att.guns + '</span><span><em>Def</em>' + T.def + '</span></div>' +
+          '<div class="where">' + esc(T.name) + ' — <i>' + esc(T.kit) + '</i>. ' + terrainLine(u.c, u.r) + '</div>';
+      }
+      const R = sc.reserves;
+      if (mine && R && u.str < u.max && !u.refit && !u.fired) {
+        const block = E.refitBlock(st, u), gain = Math.min(R.refitAmt, u.max - u.str);
+        html += '<div class="spend"><span>' + (block ? esc(block) + '.' : 'Refit here: +' + gain + ' strength, ends its turn.') + '</span>' +
+          '<button class="btn sm' + (block ? '' : ' primary') + '" data-act="refit"' + (block ? ' disabled' : '') + '>Refit · ' + R.refitCost + '</button></div>';
+      } else if (mine && !E.canMove(u) && !E.canFire(u)) html += '<div class="hint">' + (u.forming ? 'Newly formed. It can move and fire from next turn.' : 'This unit has done all it can this turn.') + '</div>';
       else if (mine && E.canFire(u) && !G.targets.length && !E.canMove(u)) html += '<div class="hint">No enemy in range.</div>';
-      else if (mine && T.mof && !u.moved && !u.fired) html += '';
       pushTurnActions(acts);
     } else if (G.inspect) {
       const [c, r] = G.inspect, i = r * sc.cols + c, t = E.TERRAIN[MAP.ter[i]];
@@ -1917,15 +2205,29 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
       const cost = cl => (t.cost[cl] == null ? '—' : fmtMp(t.cost[cl]));
       html = '<div class="idle-h">' + esc(place ? place.name : t.name) + (place ? ' <small>· ' + esc(t.name) + '</small>' : '') + '</div>' +
         '<div class="where">' + terrainLine(c, r) + '</div>' +
-        '<div class="facts"><span><em>Move cost</em>foot ' + cost('foot') + ' · horse ' + cost('horse') + ' · guns ' + cost('guns') + '</span><span><em>Climbing</em>+½, guns +1</span></div>' +
-        (oi >= 0 ? '<div class="hint">Objective worth ' + sc.objectives[oi].vp + ' VP, held by the ' + sc.sides[st.control[oi]].short + '.</div>' : '');
+        '<div class="facts"><span><em>Move cost</em>foot ' + cost('foot') + ' · horse ' + cost('horse') + ' · guns ' + cost('guns') + '</span><span><em>Climbing</em>+½, guns +1</span></div>';
+      if (oi >= 0) {
+        const o = sc.objectives[oi], holder = st.control[oi];
+        html += '<div class="hint">Held by the ' + sc.sides[holder].short + '. ' + (o.vp ? 'Objective worth ' + o.vp + ' VP. ' : '') +
+          'Yields ' + o.inc + ' reserve' + (o.inc === 1 ? '' : 's') + ' a turn' + (t === E.TERRAIN.v ? '; units in or next to it can refit.' : '.') + '</div>';
+        const R = sc.reserves;
+        if (R && humanTurn() && holder === st.side && t === E.TERRAIN.v) {
+          const ok = E.callupHexes(st, st.side).includes(i);
+          const why = st.callups[st.side] >= R.callupMax[st.side] ? 'All ' + R.callupMax[st.side] + ' call-ups used.'
+            : st.res[st.side] < R.callupCost ? 'A call-up needs ' + R.callupCost + ' reserves; you have ' + st.res[st.side] + '.'
+            : E.unitAt(st, c, r) ? 'The village must be empty.' : 'Too close to the enemy.';
+          html += '<div class="spend"><span>' + (ok ? 'Form a ' + esc(R.callup[st.side].name) + ' here (strength ' + R.callup[st.side].str + ').' : why) + '</span>' +
+            '<button class="btn sm' + (ok ? ' primary' : '') + '" data-act="callup"' + (ok ? '' : ' disabled') + '>Call up · ' + R.callupCost + '</button></div>';
+        }
+      }
       pushTurnActions(acts);
     } else {
       const v = E.vp(st);
       const ready = humanTurn() ? freshUnits().length : 0;
       html = '<div class="idle-h">' + (humanTurn() ? esc(sc.sides[st.side].short) + ' to move <small>· ' + ready + ' unit' + (ready === 1 ? '' : 's') + ' not yet used</small>' : st.over ? 'The battle is over' : 'Waiting') + '</div>' +
-        '<div class="objs">' + sc.objectives.map((o, k) => '<span class="obj"><i class="' + st.control[k] + '"></i>' + esc(o.name) + ' <b>' + o.vp + '</b></span>').join('') + '</div>' +
-        '<div class="hint">Germans hold ' + v.de + ' VP and need ' + sc.winVP + ' at nightfall. Tap a unit to act; a gold dot marks units that have not moved.</div>';
+        '<div class="objs">' + sc.objectives.map((o, k) => o.vp ? '<span class="obj"><i class="' + st.control[k] + '"></i>' + esc(o.name) + ' <b>' + o.vp + '</b></span>' : '').join('') + '</div>' +
+        '<div class="hint">Germans hold ' + v.de + ' VP and need ' + sc.winVP + ' at nightfall.' +
+        (humanTurn() && sc.reserves ? ' Reserves ' + st.res[st.side] + ', +' + E.incomeOf(st, st.side) + ' a turn from the places you hold.' : ' Tap a unit to act; a gold dot marks units that have not moved.') + '</div>';
       pushTurnActions(acts);
     }
     cardEl.innerHTML = html;
@@ -1942,11 +2244,13 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     acts.push(['end', G.confirmEnd ? 'End with ' + left + ' unused?' : 'End turn', G.confirmEnd ? 'warn' : 'primary', false]);
   }
 
-  actionsEl.addEventListener('click', e => {
+  function onAction(e) {
     const b = e.target.closest('button[data-act]');
     if (!b || b.disabled) return;
     const a = b.dataset.act, st = G.state;
-    if (a === 'next') nextUnit();
+    if (a === 'refit') { const u = selUnit(); if (u) doRefit(u); }
+    else if (a === 'callup') { if (G.inspect) doCallup(G.inspect[0], G.inspect[1]); }
+    else if (a === 'next') nextUnit();
     else if (a === 'undo') undo();
     else if (a === 'end') endTurn();
     else if (a === 'cancel') { G.pending = null; renderCard(); requestDraw(); }
@@ -1954,7 +2258,9 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     else if (a === 'ff') { G.fastThisTurn = !G.fastThisTurn; renderCard(); }
     else if (a === 'menu') showMenu();
     else if (a === 'result') showResult();
-  });
+  }
+  actionsEl.addEventListener('click', onAction);
+  cardEl.addEventListener('click', onAction);
 
   // ------------------------------------------------------------ top bar
   function updateBar() {
@@ -1965,6 +2271,8 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     $('sideFlag').className = 'flag ' + st.side;
     $('sideName').textContent = sc.sides[st.side].short;
     $('sideWho').textContent = st.over ? '' : st.players[st.side] === 'ai' ? 'AI' : bothHuman() ? '' : 'You';
+    $('resN').textContent = st.res[st.side];
+    $('res').setAttribute('aria-label', 'Reserves ' + st.res[st.side]);
   }
 
   let toastT = 0;
@@ -1982,17 +2290,95 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     '<li>A unit may move and then fire. <b>Guns</b> (artillery and mitrailleuses) move <i>or</i> fire, not both. Firing ends a unit’s movement.</li>' +
     '<li>Moving next to an enemy ends movement (zone of control). Guns exert no zone of control.</li>' +
     '<li>If you fire from within the target’s own range, it fires back at once, weakened by its losses.</li>' +
-    '<li>Infantry and cavalry can wade the Sauer but stand exposed in it. Guns cross only at the bridges of Wörth and Gunstett or the ford at Spachbach.</li>' +
-    '<li>A unit that neither moves nor fires, and is out of contact, recovers 1 strength at the end of its turn.</li>' +
+    '<li><b>The Sauer.</b> Infantry can wade it, but it takes their whole move and leaves them exposed in the water. Cavalry and guns cross only at the bridges of Wörth and Gunstett or the ford at Spachbach.</li>' +
+    '<li><b>Commanders.</b> MacMahon is on the field from the start; the Crown Prince arrives at 13:15. A commander does not fire. Units next to him fire ×' + E.CMD_BONUS + '. He can be attacked only by a unit next to him. If he falls, his army fires ×' + E.CMD_LOST + ' for the rest of the day. His staff does not take or hold places.</li>' +
+    '<li><b>Places and reserves.</b> Every village, and the Niederwald, belongs to whoever last entered it, shown by its flag. At the start of your turn each place you hold yields reserves (Froeschwiller 2, the others 1).</li>' +
+    '<li><b>Refit</b> (' + sc.reserves.refitCost + ' reserves): a worn unit in or next to a village you hold, with no enemy next to it and not fired on since your last turn, regains up to ' + sc.reserves.refitAmt + ' strength. It must not have fired, and it can do nothing more that turn.</li>' +
+    '<li><b>Call up</b> (' + sc.reserves.callupCost + ' reserves): tap an empty village you hold, away from the enemy, to form a composite battalion of strength ' + sc.reserves.callup.de.str + '. It can act from your next turn. The Germans may do this ' + sc.reserves.callupMax.de + ' times, the French ' + sc.reserves.callupMax.fr + '.</li>' +
+    '<li>A unit that neither moves nor fires, and is out of contact and not under fire, also recovers 1 strength at the end of its turn.</li>' +
     '<li><b>Victory.</b> Objectives: Froeschwiller 4 VP, Elsasshausen 2, Wörth 1, Morsbronn 1, Niederwald 1. After turn 14 (nightfall) the Germans win with 6 VP or more and the French win if the Germans hold 3 or fewer. A side reduced to 30% of the strength it has committed collapses at once.</li>' +
     '</ul>' +
     '<h3>The two armies</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>Unit</th><th>Move</th><th>Range</th><th>Fire vs foot·horse·guns</th><th>Def</th></tr></thead><tbody>' +
-    Object.values(E.UNIT_TYPES).map(T => '<tr><td>' + esc(T.name) + '</td><td>' + T.mv + '</td><td>' + (T.rng[0] === T.rng[1] ? T.rng[1] : T.rng[0] + '–' + T.rng[1]) + (T.heightRange ? '+1' : '') + '</td><td>' + T.att.foot + '·' + T.att.horse + '·' + T.att.guns + '</td><td>' + T.def + '</td></tr>').join('') +
+    Object.values(E.UNIT_TYPES).map(T => '<tr><td>' + esc(T.name) + '</td><td>' + T.mv + '</td><td>' + (T.cmd ? '—' : (T.rng[0] === T.rng[1] ? T.rng[1] : T.rng[0] + '–' + T.rng[1]) + (T.heightRange ? '+1' : '')) + '</td><td>' + (T.cmd ? '—' : T.att.foot + '·' + T.att.horse + '·' + T.att.guns) + '</td><td>' + T.def + '</td></tr>').join('') +
     '</tbody></table></div>' +
     '<h3>Terrain</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>Terrain</th><th>Foot</th><th>Horse</th><th>Guns</th><th>Cover</th></tr></thead><tbody>' +
-    Object.values(E.TERRAIN).map(t => '<tr><td>' + esc(t.name) + '</td><td>' + fmtMp(t.cost.foot) + '</td><td>' + fmtMp(t.cost.horse) + '</td><td>' + (t.cost.guns == null ? '—' : fmtMp(t.cost.guns)) + '</td><td>×' + t.def + '</td></tr>').join('') +
+    Object.values(E.TERRAIN).map(t => '<tr><td>' + esc(t.name) + '</td>' + ['foot', 'horse', 'guns'].map(cl => '<td>' + (t.cost[cl] == null ? '—' : fmtMp(t.cost[cl])) + '</td>').join('') + '<td>×' + t.def + '</td></tr>').join('') +
     '<tr><td>Road (along it)</td><td>1</td><td>1</td><td>¾</td><td>—</td></tr></tbody></table></div>' +
     '<p class="fine">Higher ground adds ×1.25 to the defender. Losses on each shot are random around the expected value shown in the forecast, from half to one and a half times it. Cavalry charging into woods, villages or vineyards fight at half effect.</p>';
+
+  // ------------------------------------------------------------ introduction
+  const KP = sc.units.find(u => u.id === 'de-kp'), MM = sc.units.find(u => u.id === 'fr-mm');
+  const cmdCard = (u, age, role, bio, inGame) => '<figure class="cmdcard">' + counterSVG(Object.assign({}, u, { str: u.str })) +
+    '<figcaption><b>' + esc(u.name) + '</b><small>' + esc(age) + ' · ' + esc(role) + '</small></figcaption>' +
+    '<p>' + esc(bio) + '</p><p class="ingame"><em>In the game</em>' + esc(inGame) + '</p></figure>';
+  const INTRO = [
+    {
+      eyebrow: 'July 1870', title: 'War on the frontier',
+      body: () => '<p class="lede">France declared war on Prussia on 19 July 1870. The quarrel began over a Hohenzollern candidate for the Spanish throne and came to a head with Bismarck’s pointed edit of the Ems telegram.</p>' +
+        '<p>France had hoped the south German states would stay out. Instead Bavaria, Württemberg and Baden stood by their treaties with Prussia, although four years earlier they had fought against her.</p>' +
+        '<p>Railways and staff work brought three German armies to the frontier in little more than a fortnight. The southernmost, the Third Army under the Prussian Crown Prince, mixed Prussian, Bavarian, Württemberg and Baden troops. Its task was to break into Alsace.</p>',
+    },
+    {
+      eyebrow: '4–5 August 1870', title: 'Wissembourg',
+      body: () => '<p class="lede">On 4 August the Third Army crossed the Lauter and fell on General Abel Douay’s division at Wissembourg. Douay was killed and his men driven back into the hills.</p>' +
+        '<p>Marshal MacMahon gathered his I Corps on the wooded ridge west of the Sauer, from Neehwiller through Froeschwiller and Elsasshausen to the Niederwald, and called for help. Conseil-Dumesnil’s division of VII Corps joined him on the eve of battle. Of de Failly’s V Corps at Bitche, only Guyot de Lespart’s division set out.</p>' +
+        '<p>MacMahon believed he had time to gather his reinforcements before the Germans attacked.</p>',
+    },
+    {
+      eyebrow: 'The commanders', title: 'Two commanders',
+      body: () => cmdCard(MM, '62', 'I Corps and the French forces in Alsace',
+        'Descended from Irish Jacobite exiles. He stormed the Malakoff at Sevastopol in 1855 and won his marshal’s baton and the title Duke of Magenta in Italy in 1859. He came to the war from six years as Governor-General of Algeria; his corps included Zouaves and Algerian Tirailleurs.',
+        'On the field from the start, north of Froeschwiller.') +
+        cmdCard(KP, '38', 'Third Army',
+          'Heir to the Prussian throne and husband of Victoria, Princess Royal, Queen Victoria’s eldest daughter. In 1866 his Second Army reached the field of Königgrätz in time to decide the battle. A liberal often at odds with Bismarck, he would reign as Emperor Friedrich III for only 99 days in 1888.',
+          'He had ordered that no battle be fought on the 6th. He arrives at 13:15 by the Sulz road.') +
+        '<p class="fine">Units next to their commander fire ×' + E.CMD_BONUS + '. A commander does not fire, and only a unit next to him can attack him. If he falls, his army fires ×' + E.CMD_LOST + ' for the rest of the day.</p>',
+    },
+    {
+      eyebrow: '6 August 1870 · dawn', title: 'A battle nobody ordered',
+      body: () => '<p class="lede">A thunderstorm broke over the valley on the evening of the 5th. At first light Prussian outposts near Gunstett fired on French soldiers fetching water from the Sauer. Towards 07:00 Prussian skirmishers waded the river into Wörth, which the French had left empty. The bridge there was down and the Sauer ran breast-deep.</p>' +
+        '<p>The guns on both banks opened up. Hearing them, the Bavarians attacked from the north. The Crown Prince sent word that nothing was to be undertaken that would bring on a battle, but General von Kirchbach of V Corps decided to fight on his own responsibility, and XI Corps joined from Gunstett.</p>' +
+        '<p>By midday the Third Army was feeding in corps after corps against a position its commander had not meant to attack that day.</p>',
+    },
+  ];
+  const ORDERS = {
+    de: ['Take Froeschwiller and the ridge. You need 6 of the 9 VP when night falls after turn 14.',
+      'V Corps faces Wörth across the Sauer. II Bavarian Corps comes in from the north and XI Corps by Gunstett; more Bavarians and the Württembergers follow during the day.',
+      'Your Krupp guns outrange the French. Their Chassepots outrange your Dreyse rifles, so close the distance quickly or fight from cover.'],
+    fr: ['Hold the ridge until dark. Keep the Germans to 3 VP or fewer, and above all keep Froeschwiller (4 VP).',
+      'You have the ground, the villages and the Chassepot. The Germans have the numbers and the better guns, and more arrive every hour.',
+      'MacMahon is just north of Froeschwiller. Keep him close to the fight but out of reach. Guyot de Lespart’s division may reach Reichshoffen in the afternoon.'],
+  };
+  const COMMON_ORDERS = ['The Sauer: infantry can wade it, using a whole move. Cavalry and guns cross only at the bridges at Wörth and Gunstett and the ford at Spachbach.',
+    'Villages you hold yield reserves every turn. Spend them to refit worn units in or next to those villages, or tap an empty village you hold to call up a composite battalion.'];
+
+  function ordersPage(players) {
+    const sides = players.de === 'human' && players.fr === 'human' ? ['de', 'fr'] : [players.de === 'human' ? 'de' : 'fr'];
+    return {
+      eyebrow: 'Your orders · Turn 1 · 08:00', title: sides.length > 1 ? 'Both armies' : sc.sides[sides[0]].short,
+      body: () => sides.map(s => (sides.length > 1 ? '<h3 class="ord-h"><span class="flag ' + s + '"></span>' + esc(sc.sides[s].short) + '</h3>' : '') +
+        '<ul class="orders">' + ORDERS[s].map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>').join('') +
+        '<ul class="orders">' + COMMON_ORDERS.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>',
+    };
+  }
+
+  // review: reading it again from the menu during a game
+  function showIntro(players, page, review) {
+    const pages = INTRO.concat([ordersPage(players)]);
+    G.intro = { players, page, review };
+    const p = pages[page], last = page === pages.length - 1;
+    const dots = pages.map((_, k) => '<i class="' + (k === page ? 'on' : '') + '"></i>').join('');
+    openOverlay('<div class="panel intro">' +
+      '<div class="steps" aria-label="Page ' + (page + 1) + ' of ' + pages.length + '">' + dots + '</div>' +
+      '<p class="eyebrow">' + esc(p.eyebrow) + '</p><h1 class="display small">' + esc(p.title) + '</h1>' + p.body() +
+      '<div class="row">' +
+      (page > 0 ? '<button class="btn" data-intro="prev">Back</button>' : '<button class="btn" data-intro="' + (review ? 'close' : 'title') + '">' + (review ? 'Back to the map' : 'Back') + '</button>') +
+      (last ? '<button class="btn primary" data-intro="' + (review ? 'close' : 'go') + '">' + (review ? 'Back to the map' : 'Take command') + '</button>'
+        : '<button class="btn primary" data-intro="next">Continue</button>') +
+      '</div>' +
+      (!last ? '<button class="linkbtn" data-intro="skip">' + (review ? 'Skip to the orders' : 'Skip to your orders') + '</button>' : '') +
+      '</div>');
+  }
 
   function showBriefing() {
     const saved = loadSave();
@@ -2005,8 +2391,8 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
       sc.briefing.map((p, k) => '<p class="' + (k ? '' : 'lede') + '">' + esc(p) + '</p>').join('') +
       '<div class="choices">' +
       (canResume ? '<button class="choice" data-start="resume"><span class="swatch ' + (saved.players.de === 'human' && saved.players.fr === 'human' ? 'hs' : saved.players.de === 'human' ? 'de' : 'fr') + '"></span><span><b>Continue the battle</b><small>Turn ' + saved.turn + ' · ' + E.clock(saved) + ', playing ' + who(saved) + '</small></span><span class="arrow">›</span></button>' : '') +
-      '<button class="choice" data-start="de"><span class="swatch de"></span><span><b>Command the Germans</b><small>' + esc(sc.sides.de.commander) + '. Take Froeschwiller and the ridge by nightfall.</small></span><span class="arrow">›</span></button>' +
-      '<button class="choice" data-start="fr"><span class="swatch fr"></span><span><b>Command the French</b><small>' + esc(sc.sides.fr.commander) + '. Hold the ridge until dark.</small></span><span class="arrow">›</span></button>' +
+      '<button class="choice" data-start="de"><span class="swatch de"></span><span><b>Command the Germans</b><small>' + esc(sc.sides.de.commander) + '’s Third Army. Take Froeschwiller and the ridge by nightfall.</small></span><span class="arrow">›</span></button>' +
+      '<button class="choice" data-start="fr"><span class="swatch fr"></span><span><b>Command the French</b><small>' + esc(sc.sides.fr.commander) + '’s I Corps. Hold the ridge until dark.</small></span><span class="arrow">›</span></button>' +
       '<button class="choice" data-start="hs"><span class="swatch hs"></span><span><b>Two players, one phone</b><small>Pass the phone between turns.</small></span><span class="arrow">›</span></button>' +
       '</div>' +
       '<details class="rules"><summary>How to play</summary>' + RULES_HTML() + '</details>' +
@@ -2015,17 +2401,28 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
   }
 
   overlayEl.addEventListener('click', e => {
-    const b = e.target.closest('[data-start],[data-menu]');
+    const b = e.target.closest('[data-start],[data-menu],[data-intro]');
     if (!b) return;
     if (b.dataset.start) {
       const m = b.dataset.start;
       if (m === 'resume') { const s = loadSave(); if (s) { startWith(s); return; } }
       const players = m === 'de' ? { de: 'human', fr: 'ai' } : m === 'fr' ? { de: 'ai', fr: 'human' } : { de: 'human', fr: 'human' };
-      startWith(E.newGame(SC_ID, players));
+      showIntro(players, 0, false);
+      return;
+    }
+    if (b.dataset.intro) {
+      const a = b.dataset.intro, it = G.intro, n = INTRO.length;
+      if (a === 'next') showIntro(it.players, it.page + 1, it.review);
+      else if (a === 'prev') showIntro(it.players, it.page - 1, it.review);
+      else if (a === 'skip') showIntro(it.players, n, it.review);
+      else if (a === 'title') showBriefing();
+      else if (a === 'close') closeOverlay();
+      else if (a === 'go') startWith(E.newGame(SC_ID, it.players));
       return;
     }
     const a = b.dataset.menu;
     if (a === 'close') { closeOverlay(); if (G.handoverPending) { G.handoverPending = false; announceTurn(); } }
+    else if (a === 'intro') showIntro(G.state.players, 0, true);
     else if (a === 'rules') showRules();
     else if (a === 'log') showLog();
     else if (a === 'speed') { G.prefs.fast = !G.prefs.fast; savePrefs(); showMenu(); renderCard(); }
@@ -2039,6 +2436,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     openOverlay('<div class="panel"><p class="eyebrow">Turn ' + G.state.turn + ' · ' + E.clock(G.state) + '</p><h1 class="display small">Field orders</h1>' +
       '<div class="menu-list">' +
       '<button class="btn primary" data-menu="close">Back to the map</button>' +
+      '<button class="btn" data-menu="intro">The situation <span>Introduction and orders</span></button>' +
       '<button class="btn" data-menu="rules">How to play</button>' +
       '<button class="btn" data-menu="log">Battle log <span>' + G.state.log.length + ' entries</span></button>' +
       '<button class="btn" data-menu="speed">Animation speed <span>' + (G.prefs.fast ? 'Fast' : 'Normal') + '</span></button>' +
@@ -2075,11 +2473,12 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
     let line = o.reason === 'collapse' ? 'The ' + sc.sides[o.loser].short + ' have lost 70% of the strength they committed and can no longer hold together.'
       : 'Nightfall. The Germans hold ' + v.de + ' VP of 9; they needed ' + sc.winVP + '.';
     if (human) line += human === o.winner ? ' Your command carried the day.' : o.winner === 'draw' ? ' Neither side can claim the field.' : ' Your command was beaten.';
+    for (const s of ['de', 'fr']) if (st.cmdLost[s]) { const cu = E.commander(st, s); line += ' ' + cu.name + ' fell during the battle.'; }
     openOverlay('<div class="panel"><p class="eyebrow">' + (o.reason === 'collapse' ? 'Turn ' + o.turn + ' · ' + E.clock(st) : 'Nightfall · 18:30') + '</p>' +
       '<h1 class="display small ' + (o.winner === 'draw' ? '' : 'verdict-' + o.winner) + '">' + title + '</h1><p class="lede">' + esc(line) + '</p>' +
       '<div class="tally"><div><small>German losses</small><b>' + (de.committed - de.now) + '</b><small>of ' + de.committed + ' strength committed</small></div>' +
       '<div><small>French losses</small><b>' + (fr.committed - fr.now) + '</b><small>of ' + fr.committed + ' strength committed</small></div></div>' +
-      '<div class="objs">' + sc.objectives.map((ob, k) => '<span class="obj"><i class="' + st.control[k] + '"></i>' + esc(ob.name) + ' <b>' + ob.vp + '</b></span>').join('') + '</div>' +
+      '<div class="objs">' + sc.objectives.map((ob, k) => ob.vp ? '<span class="obj"><i class="' + st.control[k] + '"></i>' + esc(ob.name) + ' <b>' + ob.vp + '</b></span>' : '').join('') + '</div>' +
       '<p class="fine">' + esc(sc.history) + '</p>' +
       '<div class="row"><button class="btn" data-menu="field">View the field</button><button class="btn" data-menu="log">Battle log</button><button class="btn primary" data-menu="new-yes">New battle</button></div></div>');
   }

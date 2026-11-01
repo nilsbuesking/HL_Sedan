@@ -3,7 +3,7 @@
   'use strict';
   const E = window.Engine;
   const SC_ID = 'woerth';
-  const SAVE_KEY = 'woerth1870.save.v1', PREF_KEY = 'woerth1870.prefs.v1';
+  const SAVE_KEY = 'woerth1870.save.v2', PREF_KEY = 'woerth1870.prefs.v1';
   const sc = E.SCENARIOS[SC_ID];
   const MAP = E.buildMap(sc);
   const S = 30, SQ3 = Math.sqrt(3), MARGIN = 34;
@@ -374,18 +374,18 @@
     ctx.restore();
   }
 
-  function drawObjectives() {
+  function drawObjectives() { // every holdable place gets a flag; victory objectives also a VP medallion
     const st = G.state;
     sc.objectives.forEach((o, k) => {
       const [x, y] = center(o.c, o.r);
-      const owner = st.control[k];
+      const owner = st.control[k], big = o.vp > 0, f = big ? 1 : 0.7;
       const px = x + S * 0.5, py = y - S * 0.5;
-      ctx.strokeStyle = C.frame; ctx.lineWidth = 1.3;
-      ctx.beginPath(); ctx.moveTo(px, py + 9); ctx.lineTo(px, py - 11); ctx.stroke();
+      ctx.strokeStyle = C.frame; ctx.lineWidth = big ? 1.3 : 1.1;
+      ctx.beginPath(); ctx.moveTo(px, py + (big ? 9 : 4)); ctx.lineTo(px, py - 11 * f); ctx.stroke();
       ctx.fillStyle = C.sideCol[owner];
-      ctx.beginPath(); ctx.moveTo(px, py - 11); ctx.lineTo(px + 14, py - 7.5); ctx.lineTo(px, py - 4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(px, py - 11 * f); ctx.lineTo(px + 14 * f, py - 7.5 * f); ctx.lineTo(px, py - 4 * f); ctx.closePath(); ctx.fill();
       ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 0.6; ctx.stroke();
-      // VP medallion
+      if (!big) return;
       ctx.fillStyle = '#f2ecd9'; ctx.strokeStyle = C.frame; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(px, py + 11, 5.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = C.frame; ctx.font = '700 8px ' + FONT_UI; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -439,6 +439,15 @@
       }
     }
     if (G.pending) requestDraw();
+    if (u && E.isCmd(u)) { // command radius: the six hexes whose units fire better
+      for (let d = 0; d < 6; d++) {
+        const [nc, nr] = E.neighbour(u.c, u.r, d);
+        if (nc < 0 || nr < 0 || nc >= sc.cols || nr >= sc.rows) continue;
+        const [x, y] = center(nc, nr);
+        hexPath(ctx, x, y, S - 3);
+        ctx.setLineDash([3, 3]); ctx.strokeStyle = C.brass; ctx.lineWidth = 1.8; ctx.stroke(); ctx.setLineDash([]);
+      }
+    }
     if (u) {
       const [x, y] = center(u.c, u.r);
       hexPath(ctx, x, y, S - 0.5);
@@ -473,11 +482,15 @@
     ctx.fillStyle = C.bandLine[u.nat]; ctx.fillRect(rx, ry + h * 0.17, w, 1.1);
     ctx.restore();
     ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 0.9; roundRect(rx, ry, w, h, 3.5); ctx.stroke();
+    if (T.cmd) { ctx.strokeStyle = C.brass; ctx.lineWidth = 1.8; roundRect(rx + 1, ry + 1, w - 2, h - 2, 3); ctx.stroke(); }
     // NATO-style symbol
     const ink = C.ink[u.nat];
     const bw = w * 0.44, bh = h * 0.42, bx = rx + w * 0.1, by = ry + h * 0.3;
     ctx.strokeStyle = ink; ctx.fillStyle = ink; ctx.lineWidth = 1.2;
-    ctx.strokeRect(bx, by, bw, bh);
+    if (T.cmd) { // commander's pennant on a staff
+      ctx.beginPath(); ctx.moveTo(bx + 2, by + bh + 2); ctx.lineTo(bx + 2, by - 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx + 2, by - 2); ctx.lineTo(bx + bw, by - 2); ctx.lineTo(bx + bw - 4, by + bh * 0.3); ctx.lineTo(bx + bw, by + bh * 0.62); ctx.lineTo(bx + 2, by + bh * 0.62); ctx.closePath(); ctx.fill();
+    } else ctx.strokeRect(bx, by, bw, bh);
     ctx.beginPath();
     if (T.sym === 'inf' || T.sym === 'jaeger') { ctx.moveTo(bx, by); ctx.lineTo(bx + bw, by + bh); ctx.moveTo(bx + bw, by); ctx.lineTo(bx, by + bh); }
     if (T.sym === 'cav') { ctx.moveTo(bx, by + bh); ctx.lineTo(bx + bw, by); }
@@ -652,15 +665,44 @@
     G.busy = true; G.pending = null; G.reach = null; G.targets = []; renderCard();
     await animAttack(res);
     G.busy = false;
-    if (res.killed) toast(E.unitLabel(t) + ' is broken.');
+    if (res.cmdFell) toast(t.name + ' has fallen. The ' + sc.sides[res.cmdFell].short + ' fire ×' + E.CMD_LOST + ' for the rest of the day.', 4200);
+    else if (res.killed) toast(E.unitLabel(t) + ' is broken.');
     else if (res.lost) toast(E.unitLabel(u) + ' is broken.');
     save(); refreshSel(); renderCard(); requestDraw(); updateBar();
     if (G.state.over) showResult();
   }
 
+  function floatAt(c, r, text, color) {
+    const [x, y] = center(c, r), now = performance.now();
+    G.effects.push({ kind: 'float', x, y: y - S * 0.3, t0: now, dur: 1100 * Math.max(speed(), 0.6), text, color });
+    requestDraw();
+  }
+
+  function doRefit(u) {
+    if (!humanTurn() || G.busy) return;
+    const r = E.refit(G.state, u);
+    if (!r) return;
+    floatAt(u.c, u.r, '+' + r.gain, '#2f6b2a');
+    toast(E.unitLabel(u) + ' refits: +' + r.gain + ' strength.');
+    save(); refreshSel(); renderCard(); requestDraw(); updateBar();
+  }
+
+  function doCallup(c, r) {
+    if (!humanTurn() || G.busy) return;
+    const res = E.callup(G.state, r * sc.cols + c);
+    if (!res) return;
+    const u = unitById(res.unitId);
+    G.effects.push({ kind: 'flash', x: center(c, r)[0], y: center(c, r)[1], t0: performance.now(), dur: 400 });
+    floatAt(c, r, 'Formed', '#2f6b2a');
+    toast(u.name + ' is formed. It can move from next turn.');
+    save(); updateBar(); select(u.id);
+  }
+
   function announceCaptures(before) {
     sc.objectives.forEach((o, k) => {
-      if (before[k] !== G.state.control[k]) toast(o.name + ' taken by the ' + sc.sides[G.state.control[k]].short + ' (' + o.vp + ' VP).');
+      if (before[k] === G.state.control[k]) return;
+      const who = sc.sides[G.state.control[k]].short;
+      toast(o.name + ' taken by the ' + who + (o.vp ? ' (' + o.vp + ' VP).' : ' (+' + o.inc + ' reserves a turn).'));
     });
   }
 
@@ -712,7 +754,10 @@
     const st = G.state;
     const arr = (st.arrivals || []).map(id => unitById(id)).filter(Boolean);
     let msg = 'Turn ' + st.turn + ' · ' + E.clock(st) + '. ' + sc.sides[st.side].short + ' to move.';
-    if (arr.length) msg += ' Arriving: ' + arr.map(u => u.short).join(', ') + '.';
+    if (st.income[st.side]) msg += ' Reserves +' + st.income[st.side] + ', now ' + st.res[st.side] + '.';
+    const cmdArr = arr.find(u => E.isCmd(u));
+    if (cmdArr) msg += ' ' + cmdArr.name + ' has reached the field.';
+    else if (arr.length) msg += ' Arriving: ' + arr.map(u => u.short).join(', ') + '.';
     toast(msg, 3200);
     const mine = E.live(st, st.side);
     if (arr.length) { const [x, y] = center(arr[0].c, arr[0].r); panTo(x, y, 400); }
@@ -732,8 +777,7 @@
     while (!st.over && st.side === side && guard++ < 240) {
       const act = E.aiNextAction(st);
       if (!act) break;
-      const u = unitById(act.unitId);
-      await follow(u.c, u.r);
+      if (act.kind !== 'hold') await follow(act.kind === 'callup' ? act.toCR[0] : unitById(act.unitId).c, act.kind === 'callup' ? act.toCR[1] : unitById(act.unitId).r);
       const before = st.control.slice();
       const evs = E.aiApply(st, act);
       for (const ev of evs) {
@@ -743,6 +787,15 @@
         } else if (ev.kind === 'attack') {
           await follow(ev.to[0], ev.to[1]);
           await animAttack(ev);
+          if (ev.cmdFell) toast(unitById(ev.targetId).name + ' has fallen. The ' + sc.sides[ev.cmdFell].short + ' fire ×' + E.CMD_LOST + ' for the rest of the day.', 4200);
+        } else if (ev.kind === 'refit') {
+          floatAt(ev.at[0], ev.at[1], '+' + ev.gain, '#2f6b2a');
+          await sleep(450 * speed());
+        } else if (ev.kind === 'callup') {
+          const [x, y] = center(ev.at[0], ev.at[1]);
+          G.effects.push({ kind: 'flash', x, y, t0: performance.now(), dur: 400 * speed() });
+          floatAt(ev.at[0], ev.at[1], 'Formed', '#2f6b2a');
+          await sleep(550 * speed());
         }
       }
       announceCaptures(before);
@@ -762,15 +815,16 @@
     const fill = { pr: 'var(--prussian)', bv: 'var(--bavaria)', wu: 'var(--prussian)', fr: 'var(--garance)' }[u.nat];
     const band = { pr: 'var(--flag-black)', bv: 'var(--flag-white)', wu: 'var(--flag-black)', fr: 'var(--tricolour-blue)' }[u.nat];
     const ink = u.nat === 'bv' ? 'var(--ink)' : 'var(--flag-white)';
-    let sym = '';
-    if (T.sym === 'inf' || T.sym === 'jaeger') sym = '<path d="M5 12 L21 24 M21 12 L5 24"/>';
-    if (T.sym === 'cav') sym = '<path d="M5 24 L21 12"/>';
+    let sym = '<rect x="5" y="12" width="16" height="12"/>';
+    if (T.sym === 'inf' || T.sym === 'jaeger') sym += '<path d="M5 12 L21 24 M21 12 L5 24"/>';
+    if (T.sym === 'cav') sym += '<path d="M5 24 L21 12"/>';
     if (T.sym === 'jaeger') sym += '<path d="M10 11 A3 3 0 0 1 16 11"/>';
-    if (T.sym === 'art') sym = '<circle cx="13" cy="18" r="2.6" style="fill:' + ink + '"/>';
-    if (T.sym === 'mg') sym = '<circle cx="13" cy="18" r="2.2" style="fill:' + ink + '"/><path d="M8 15v6M18 15v6"/>';
-    return '<svg class="mini" viewBox="0 0 46 36" aria-hidden="true"><rect x="1" y="1" width="44" height="34" rx="4" style="fill:' + fill + ';stroke:rgba(0,0,0,.5)"/>' +
+    if (T.sym === 'art') sym += '<circle cx="13" cy="18" r="2.6" style="fill:' + ink + '"/>';
+    if (T.sym === 'mg') sym += '<circle cx="13" cy="18" r="2.2" style="fill:' + ink + '"/><path d="M8 15v6M18 15v6"/>';
+    if (T.sym === 'cmd') sym = '<path d="M7 27V10"/><path d="M7 10h14l-4 4 4 4H7z" style="fill:' + ink + '"/>';
+    return '<svg class="mini" viewBox="0 0 46 36" aria-hidden="true"><rect x="1" y="1" width="44" height="34" rx="4" style="fill:' + fill + ';stroke:' + (T.cmd ? 'var(--brass);stroke-width:2' : 'rgba(0,0,0,.5)') + '"/>' +
       '<path d="M5 1h36a4 4 0 0 1 4 4v1.5H1V5a4 4 0 0 1 4-4z" style="fill:' + band + '"/>' +
-      '<g style="stroke:' + ink + ';fill:none;stroke-width:1.4"><rect x="5" y="12" width="16" height="12"/>' + sym + '</g>' +
+      '<g style="stroke:' + ink + ';fill:none;stroke-width:1.4">' + sym + '</g>' +
       '<text x="35" y="23" text-anchor="middle" style="fill:' + ink + ';font:700 13px var(--f-ui)">' + u.str + '</text></svg>';
   }
   function meter(u) {
@@ -813,18 +867,27 @@
       const mine = u.side === st.side && humanTurn();
       const enemy = st.players[u.side] !== 'human' || (bothHuman() && u.side !== st.side);
       let status = '';
-      if (mine) status = !u.moved && !u.fired ? '<span class="tag ready">Ready</span>' : u.fired ? '<span class="tag">Fired</span>' : (E.canMove(u) || E.canFire(u)) ? '<span class="tag">Moved</span>' : '<span class="tag">Spent</span>';
+      if (mine) status = u.forming ? '<span class="tag">Forming</span>' : u.refit ? '<span class="tag">Refitted</span>' : !u.moved && !u.fired ? '<span class="tag ready">Ready</span>' : u.fired ? '<span class="tag">Fired</span>' : (E.canMove(u) || E.canFire(u)) ? '<span class="tag">Moved</span>' : '<span class="tag">Spent</span>';
       else if (enemy) status = '<span class="tag enemy ' + u.side + '">' + (u.side === 'de' ? 'German' : 'French') + '</span>';
       const rng = E.fireRange(st, u, E.idxOf(st, u));
       html = '<div class="ucard">' + counterSVG(u) +
         '<div style="min-width:0"><div class="u-name">' + esc(u.name) + status + '</div><div class="u-sub">' + esc(u.sub || '') + '</div>' + meter(u) + '</div>' +
-        '<div class="u-str"><b>' + u.str + '</b><small>of ' + u.max + '</small></div></div>' +
-        '<div class="facts"><span><em>Move</em>' + (mine ? fmtMp(u.mp) + '/' : '') + T.mv + '</span><span><em>Range</em>' + (rng[0] === rng[1] ? rng[0] : rng[0] + '–' + rng[1]) + '</span>' +
-        '<span><em>Fire</em>' + T.att.foot + '·' + T.att.horse + '·' + T.att.guns + '</span><span><em>Def</em>' + T.def + '</span></div>' +
-        '<div class="where">' + esc(T.name) + ' — <i>' + esc(T.kit) + '</i>. ' + terrainLine(u.c, u.r) + '</div>';
-      if (mine && !E.canMove(u) && !E.canFire(u)) html += '<div class="hint">This unit has done all it can this turn.</div>';
+        '<div class="u-str"><b>' + u.str + '</b><small>of ' + u.max + '</small></div></div>';
+      if (T.cmd) {
+        html += '<div class="facts"><span><em>Move</em>' + (mine ? fmtMp(u.mp) + '/' : '') + T.mv + '</span><span><em>Command</em>next to him ×' + E.CMD_BONUS + '</span><span><em>Def</em>' + T.def + '</span></div>' +
+          '<div class="where">Does not fire. Only a unit next to him can attack him; if he falls, his army fires ×' + E.CMD_LOST + ' for the rest of the day. ' + terrainLine(u.c, u.r) + '</div>';
+      } else {
+        html += '<div class="facts"><span><em>Move</em>' + (mine ? fmtMp(u.mp) + '/' : '') + T.mv + '</span><span><em>Range</em>' + (rng[0] === rng[1] ? rng[0] : rng[0] + '–' + rng[1]) + '</span>' +
+          '<span><em>Fire</em>' + T.att.foot + '·' + T.att.horse + '·' + T.att.guns + '</span><span><em>Def</em>' + T.def + '</span></div>' +
+          '<div class="where">' + esc(T.name) + ' — <i>' + esc(T.kit) + '</i>. ' + terrainLine(u.c, u.r) + '</div>';
+      }
+      const R = sc.reserves;
+      if (mine && R && u.str < u.max && !u.refit && !u.fired) {
+        const block = E.refitBlock(st, u), gain = Math.min(R.refitAmt, u.max - u.str);
+        html += '<div class="spend"><span>' + (block ? esc(block) + '.' : 'Refit here: +' + gain + ' strength, ends its turn.') + '</span>' +
+          '<button class="btn sm' + (block ? '' : ' primary') + '" data-act="refit"' + (block ? ' disabled' : '') + '>Refit · ' + R.refitCost + '</button></div>';
+      } else if (mine && !E.canMove(u) && !E.canFire(u)) html += '<div class="hint">' + (u.forming ? 'Newly formed. It can move and fire from next turn.' : 'This unit has done all it can this turn.') + '</div>';
       else if (mine && E.canFire(u) && !G.targets.length && !E.canMove(u)) html += '<div class="hint">No enemy in range.</div>';
-      else if (mine && T.mof && !u.moved && !u.fired) html += '';
       pushTurnActions(acts);
     } else if (G.inspect) {
       const [c, r] = G.inspect, i = r * sc.cols + c, t = E.TERRAIN[MAP.ter[i]];
@@ -833,15 +896,29 @@
       const cost = cl => (t.cost[cl] == null ? '—' : fmtMp(t.cost[cl]));
       html = '<div class="idle-h">' + esc(place ? place.name : t.name) + (place ? ' <small>· ' + esc(t.name) + '</small>' : '') + '</div>' +
         '<div class="where">' + terrainLine(c, r) + '</div>' +
-        '<div class="facts"><span><em>Move cost</em>foot ' + cost('foot') + ' · horse ' + cost('horse') + ' · guns ' + cost('guns') + '</span><span><em>Climbing</em>+½, guns +1</span></div>' +
-        (oi >= 0 ? '<div class="hint">Objective worth ' + sc.objectives[oi].vp + ' VP, held by the ' + sc.sides[st.control[oi]].short + '.</div>' : '');
+        '<div class="facts"><span><em>Move cost</em>foot ' + cost('foot') + ' · horse ' + cost('horse') + ' · guns ' + cost('guns') + '</span><span><em>Climbing</em>+½, guns +1</span></div>';
+      if (oi >= 0) {
+        const o = sc.objectives[oi], holder = st.control[oi];
+        html += '<div class="hint">Held by the ' + sc.sides[holder].short + '. ' + (o.vp ? 'Objective worth ' + o.vp + ' VP. ' : '') +
+          'Yields ' + o.inc + ' reserve' + (o.inc === 1 ? '' : 's') + ' a turn' + (t === E.TERRAIN.v ? '; units in or next to it can refit.' : '.') + '</div>';
+        const R = sc.reserves;
+        if (R && humanTurn() && holder === st.side && t === E.TERRAIN.v) {
+          const ok = E.callupHexes(st, st.side).includes(i);
+          const why = st.callups[st.side] >= R.callupMax[st.side] ? 'All ' + R.callupMax[st.side] + ' call-ups used.'
+            : st.res[st.side] < R.callupCost ? 'A call-up needs ' + R.callupCost + ' reserves; you have ' + st.res[st.side] + '.'
+            : E.unitAt(st, c, r) ? 'The village must be empty.' : 'Too close to the enemy.';
+          html += '<div class="spend"><span>' + (ok ? 'Form a ' + esc(R.callup[st.side].name) + ' here (strength ' + R.callup[st.side].str + ').' : why) + '</span>' +
+            '<button class="btn sm' + (ok ? ' primary' : '') + '" data-act="callup"' + (ok ? '' : ' disabled') + '>Call up · ' + R.callupCost + '</button></div>';
+        }
+      }
       pushTurnActions(acts);
     } else {
       const v = E.vp(st);
       const ready = humanTurn() ? freshUnits().length : 0;
       html = '<div class="idle-h">' + (humanTurn() ? esc(sc.sides[st.side].short) + ' to move <small>· ' + ready + ' unit' + (ready === 1 ? '' : 's') + ' not yet used</small>' : st.over ? 'The battle is over' : 'Waiting') + '</div>' +
-        '<div class="objs">' + sc.objectives.map((o, k) => '<span class="obj"><i class="' + st.control[k] + '"></i>' + esc(o.name) + ' <b>' + o.vp + '</b></span>').join('') + '</div>' +
-        '<div class="hint">Germans hold ' + v.de + ' VP and need ' + sc.winVP + ' at nightfall. Tap a unit to act; a gold dot marks units that have not moved.</div>';
+        '<div class="objs">' + sc.objectives.map((o, k) => o.vp ? '<span class="obj"><i class="' + st.control[k] + '"></i>' + esc(o.name) + ' <b>' + o.vp + '</b></span>' : '').join('') + '</div>' +
+        '<div class="hint">Germans hold ' + v.de + ' VP and need ' + sc.winVP + ' at nightfall.' +
+        (humanTurn() && sc.reserves ? ' Reserves ' + st.res[st.side] + ', +' + E.incomeOf(st, st.side) + ' a turn from the places you hold.' : ' Tap a unit to act; a gold dot marks units that have not moved.') + '</div>';
       pushTurnActions(acts);
     }
     cardEl.innerHTML = html;
@@ -858,11 +935,13 @@
     acts.push(['end', G.confirmEnd ? 'End with ' + left + ' unused?' : 'End turn', G.confirmEnd ? 'warn' : 'primary', false]);
   }
 
-  actionsEl.addEventListener('click', e => {
+  function onAction(e) {
     const b = e.target.closest('button[data-act]');
     if (!b || b.disabled) return;
     const a = b.dataset.act, st = G.state;
-    if (a === 'next') nextUnit();
+    if (a === 'refit') { const u = selUnit(); if (u) doRefit(u); }
+    else if (a === 'callup') { if (G.inspect) doCallup(G.inspect[0], G.inspect[1]); }
+    else if (a === 'next') nextUnit();
     else if (a === 'undo') undo();
     else if (a === 'end') endTurn();
     else if (a === 'cancel') { G.pending = null; renderCard(); requestDraw(); }
@@ -870,7 +949,9 @@
     else if (a === 'ff') { G.fastThisTurn = !G.fastThisTurn; renderCard(); }
     else if (a === 'menu') showMenu();
     else if (a === 'result') showResult();
-  });
+  }
+  actionsEl.addEventListener('click', onAction);
+  cardEl.addEventListener('click', onAction);
 
   // ------------------------------------------------------------ top bar
   function updateBar() {
@@ -881,6 +962,8 @@
     $('sideFlag').className = 'flag ' + st.side;
     $('sideName').textContent = sc.sides[st.side].short;
     $('sideWho').textContent = st.over ? '' : st.players[st.side] === 'ai' ? 'AI' : bothHuman() ? '' : 'You';
+    $('resN').textContent = st.res[st.side];
+    $('res').setAttribute('aria-label', 'Reserves ' + st.res[st.side]);
   }
 
   let toastT = 0;
@@ -898,17 +981,95 @@
     '<li>A unit may move and then fire. <b>Guns</b> (artillery and mitrailleuses) move <i>or</i> fire, not both. Firing ends a unit’s movement.</li>' +
     '<li>Moving next to an enemy ends movement (zone of control). Guns exert no zone of control.</li>' +
     '<li>If you fire from within the target’s own range, it fires back at once, weakened by its losses.</li>' +
-    '<li>Infantry and cavalry can wade the Sauer but stand exposed in it. Guns cross only at the bridges of Wörth and Gunstett or the ford at Spachbach.</li>' +
-    '<li>A unit that neither moves nor fires, and is out of contact, recovers 1 strength at the end of its turn.</li>' +
+    '<li><b>The Sauer.</b> Infantry can wade it, but it takes their whole move and leaves them exposed in the water. Cavalry and guns cross only at the bridges of Wörth and Gunstett or the ford at Spachbach.</li>' +
+    '<li><b>Commanders.</b> MacMahon is on the field from the start; the Crown Prince arrives at 13:15. A commander does not fire. Units next to him fire ×' + E.CMD_BONUS + '. He can be attacked only by a unit next to him. If he falls, his army fires ×' + E.CMD_LOST + ' for the rest of the day. His staff does not take or hold places.</li>' +
+    '<li><b>Places and reserves.</b> Every village, and the Niederwald, belongs to whoever last entered it, shown by its flag. At the start of your turn each place you hold yields reserves (Froeschwiller 2, the others 1).</li>' +
+    '<li><b>Refit</b> (' + sc.reserves.refitCost + ' reserves): a worn unit in or next to a village you hold, with no enemy next to it and not fired on since your last turn, regains up to ' + sc.reserves.refitAmt + ' strength. It must not have fired, and it can do nothing more that turn.</li>' +
+    '<li><b>Call up</b> (' + sc.reserves.callupCost + ' reserves): tap an empty village you hold, away from the enemy, to form a composite battalion of strength ' + sc.reserves.callup.de.str + '. It can act from your next turn. The Germans may do this ' + sc.reserves.callupMax.de + ' times, the French ' + sc.reserves.callupMax.fr + '.</li>' +
+    '<li>A unit that neither moves nor fires, and is out of contact and not under fire, also recovers 1 strength at the end of its turn.</li>' +
     '<li><b>Victory.</b> Objectives: Froeschwiller 4 VP, Elsasshausen 2, Wörth 1, Morsbronn 1, Niederwald 1. After turn 14 (nightfall) the Germans win with 6 VP or more and the French win if the Germans hold 3 or fewer. A side reduced to 30% of the strength it has committed collapses at once.</li>' +
     '</ul>' +
     '<h3>The two armies</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>Unit</th><th>Move</th><th>Range</th><th>Fire vs foot·horse·guns</th><th>Def</th></tr></thead><tbody>' +
-    Object.values(E.UNIT_TYPES).map(T => '<tr><td>' + esc(T.name) + '</td><td>' + T.mv + '</td><td>' + (T.rng[0] === T.rng[1] ? T.rng[1] : T.rng[0] + '–' + T.rng[1]) + (T.heightRange ? '+1' : '') + '</td><td>' + T.att.foot + '·' + T.att.horse + '·' + T.att.guns + '</td><td>' + T.def + '</td></tr>').join('') +
+    Object.values(E.UNIT_TYPES).map(T => '<tr><td>' + esc(T.name) + '</td><td>' + T.mv + '</td><td>' + (T.cmd ? '—' : (T.rng[0] === T.rng[1] ? T.rng[1] : T.rng[0] + '–' + T.rng[1]) + (T.heightRange ? '+1' : '')) + '</td><td>' + (T.cmd ? '—' : T.att.foot + '·' + T.att.horse + '·' + T.att.guns) + '</td><td>' + T.def + '</td></tr>').join('') +
     '</tbody></table></div>' +
     '<h3>Terrain</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>Terrain</th><th>Foot</th><th>Horse</th><th>Guns</th><th>Cover</th></tr></thead><tbody>' +
-    Object.values(E.TERRAIN).map(t => '<tr><td>' + esc(t.name) + '</td><td>' + fmtMp(t.cost.foot) + '</td><td>' + fmtMp(t.cost.horse) + '</td><td>' + (t.cost.guns == null ? '—' : fmtMp(t.cost.guns)) + '</td><td>×' + t.def + '</td></tr>').join('') +
+    Object.values(E.TERRAIN).map(t => '<tr><td>' + esc(t.name) + '</td>' + ['foot', 'horse', 'guns'].map(cl => '<td>' + (t.cost[cl] == null ? '—' : fmtMp(t.cost[cl])) + '</td>').join('') + '<td>×' + t.def + '</td></tr>').join('') +
     '<tr><td>Road (along it)</td><td>1</td><td>1</td><td>¾</td><td>—</td></tr></tbody></table></div>' +
     '<p class="fine">Higher ground adds ×1.25 to the defender. Losses on each shot are random around the expected value shown in the forecast, from half to one and a half times it. Cavalry charging into woods, villages or vineyards fight at half effect.</p>';
+
+  // ------------------------------------------------------------ introduction
+  const KP = sc.units.find(u => u.id === 'de-kp'), MM = sc.units.find(u => u.id === 'fr-mm');
+  const cmdCard = (u, age, role, bio, inGame) => '<figure class="cmdcard">' + counterSVG(Object.assign({}, u, { str: u.str })) +
+    '<figcaption><b>' + esc(u.name) + '</b><small>' + esc(age) + ' · ' + esc(role) + '</small></figcaption>' +
+    '<p>' + esc(bio) + '</p><p class="ingame"><em>In the game</em>' + esc(inGame) + '</p></figure>';
+  const INTRO = [
+    {
+      eyebrow: 'July 1870', title: 'War on the frontier',
+      body: () => '<p class="lede">France declared war on Prussia on 19 July 1870. The quarrel began over a Hohenzollern candidate for the Spanish throne and came to a head with Bismarck’s pointed edit of the Ems telegram.</p>' +
+        '<p>France had hoped the south German states would stay out. Instead Bavaria, Württemberg and Baden stood by their treaties with Prussia, although four years earlier they had fought against her.</p>' +
+        '<p>Railways and staff work brought three German armies to the frontier in little more than a fortnight. The southernmost, the Third Army under the Prussian Crown Prince, mixed Prussian, Bavarian, Württemberg and Baden troops. Its task was to break into Alsace.</p>',
+    },
+    {
+      eyebrow: '4–5 August 1870', title: 'Wissembourg',
+      body: () => '<p class="lede">On 4 August the Third Army crossed the Lauter and fell on General Abel Douay’s division at Wissembourg. Douay was killed and his men driven back into the hills.</p>' +
+        '<p>Marshal MacMahon gathered his I Corps on the wooded ridge west of the Sauer, from Neehwiller through Froeschwiller and Elsasshausen to the Niederwald, and called for help. Conseil-Dumesnil’s division of VII Corps joined him on the eve of battle. Of de Failly’s V Corps at Bitche, only Guyot de Lespart’s division set out.</p>' +
+        '<p>MacMahon believed he had time to gather his reinforcements before the Germans attacked.</p>',
+    },
+    {
+      eyebrow: 'The commanders', title: 'Two commanders',
+      body: () => cmdCard(MM, '62', 'I Corps and the French forces in Alsace',
+        'Descended from Irish Jacobite exiles. He stormed the Malakoff at Sevastopol in 1855 and won his marshal’s baton and the title Duke of Magenta in Italy in 1859. He came to the war from six years as Governor-General of Algeria; his corps included Zouaves and Algerian Tirailleurs.',
+        'On the field from the start, north of Froeschwiller.') +
+        cmdCard(KP, '38', 'Third Army',
+          'Heir to the Prussian throne and husband of Victoria, Princess Royal, Queen Victoria’s eldest daughter. In 1866 his Second Army reached the field of Königgrätz in time to decide the battle. A liberal often at odds with Bismarck, he would reign as Emperor Friedrich III for only 99 days in 1888.',
+          'He had ordered that no battle be fought on the 6th. He arrives at 13:15 by the Sulz road.') +
+        '<p class="fine">Units next to their commander fire ×' + E.CMD_BONUS + '. A commander does not fire, and only a unit next to him can attack him. If he falls, his army fires ×' + E.CMD_LOST + ' for the rest of the day.</p>',
+    },
+    {
+      eyebrow: '6 August 1870 · dawn', title: 'A battle nobody ordered',
+      body: () => '<p class="lede">A thunderstorm broke over the valley on the evening of the 5th. At first light Prussian outposts near Gunstett fired on French soldiers fetching water from the Sauer. Towards 07:00 Prussian skirmishers waded the river into Wörth, which the French had left empty. The bridge there was down and the Sauer ran breast-deep.</p>' +
+        '<p>The guns on both banks opened up. Hearing them, the Bavarians attacked from the north. The Crown Prince sent word that nothing was to be undertaken that would bring on a battle, but General von Kirchbach of V Corps decided to fight on his own responsibility, and XI Corps joined from Gunstett.</p>' +
+        '<p>By midday the Third Army was feeding in corps after corps against a position its commander had not meant to attack that day.</p>',
+    },
+  ];
+  const ORDERS = {
+    de: ['Take Froeschwiller and the ridge. You need 6 of the 9 VP when night falls after turn 14.',
+      'V Corps faces Wörth across the Sauer. II Bavarian Corps comes in from the north and XI Corps by Gunstett; more Bavarians and the Württembergers follow during the day.',
+      'Your Krupp guns outrange the French. Their Chassepots outrange your Dreyse rifles, so close the distance quickly or fight from cover.'],
+    fr: ['Hold the ridge until dark. Keep the Germans to 3 VP or fewer, and above all keep Froeschwiller (4 VP).',
+      'You have the ground, the villages and the Chassepot. The Germans have the numbers and the better guns, and more arrive every hour.',
+      'MacMahon is just north of Froeschwiller. Keep him close to the fight but out of reach. Guyot de Lespart’s division may reach Reichshoffen in the afternoon.'],
+  };
+  const COMMON_ORDERS = ['The Sauer: infantry can wade it, using a whole move. Cavalry and guns cross only at the bridges at Wörth and Gunstett and the ford at Spachbach.',
+    'Villages you hold yield reserves every turn. Spend them to refit worn units in or next to those villages, or tap an empty village you hold to call up a composite battalion.'];
+
+  function ordersPage(players) {
+    const sides = players.de === 'human' && players.fr === 'human' ? ['de', 'fr'] : [players.de === 'human' ? 'de' : 'fr'];
+    return {
+      eyebrow: 'Your orders · Turn 1 · 08:00', title: sides.length > 1 ? 'Both armies' : sc.sides[sides[0]].short,
+      body: () => sides.map(s => (sides.length > 1 ? '<h3 class="ord-h"><span class="flag ' + s + '"></span>' + esc(sc.sides[s].short) + '</h3>' : '') +
+        '<ul class="orders">' + ORDERS[s].map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>').join('') +
+        '<ul class="orders">' + COMMON_ORDERS.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>',
+    };
+  }
+
+  // review: reading it again from the menu during a game
+  function showIntro(players, page, review) {
+    const pages = INTRO.concat([ordersPage(players)]);
+    G.intro = { players, page, review };
+    const p = pages[page], last = page === pages.length - 1;
+    const dots = pages.map((_, k) => '<i class="' + (k === page ? 'on' : '') + '"></i>').join('');
+    openOverlay('<div class="panel intro">' +
+      '<div class="steps" aria-label="Page ' + (page + 1) + ' of ' + pages.length + '">' + dots + '</div>' +
+      '<p class="eyebrow">' + esc(p.eyebrow) + '</p><h1 class="display small">' + esc(p.title) + '</h1>' + p.body() +
+      '<div class="row">' +
+      (page > 0 ? '<button class="btn" data-intro="prev">Back</button>' : '<button class="btn" data-intro="' + (review ? 'close' : 'title') + '">' + (review ? 'Back to the map' : 'Back') + '</button>') +
+      (last ? '<button class="btn primary" data-intro="' + (review ? 'close' : 'go') + '">' + (review ? 'Back to the map' : 'Take command') + '</button>'
+        : '<button class="btn primary" data-intro="next">Continue</button>') +
+      '</div>' +
+      (!last ? '<button class="linkbtn" data-intro="skip">' + (review ? 'Skip to the orders' : 'Skip to your orders') + '</button>' : '') +
+      '</div>');
+  }
 
   function showBriefing() {
     const saved = loadSave();
@@ -921,8 +1082,8 @@
       sc.briefing.map((p, k) => '<p class="' + (k ? '' : 'lede') + '">' + esc(p) + '</p>').join('') +
       '<div class="choices">' +
       (canResume ? '<button class="choice" data-start="resume"><span class="swatch ' + (saved.players.de === 'human' && saved.players.fr === 'human' ? 'hs' : saved.players.de === 'human' ? 'de' : 'fr') + '"></span><span><b>Continue the battle</b><small>Turn ' + saved.turn + ' · ' + E.clock(saved) + ', playing ' + who(saved) + '</small></span><span class="arrow">›</span></button>' : '') +
-      '<button class="choice" data-start="de"><span class="swatch de"></span><span><b>Command the Germans</b><small>' + esc(sc.sides.de.commander) + '. Take Froeschwiller and the ridge by nightfall.</small></span><span class="arrow">›</span></button>' +
-      '<button class="choice" data-start="fr"><span class="swatch fr"></span><span><b>Command the French</b><small>' + esc(sc.sides.fr.commander) + '. Hold the ridge until dark.</small></span><span class="arrow">›</span></button>' +
+      '<button class="choice" data-start="de"><span class="swatch de"></span><span><b>Command the Germans</b><small>' + esc(sc.sides.de.commander) + '’s Third Army. Take Froeschwiller and the ridge by nightfall.</small></span><span class="arrow">›</span></button>' +
+      '<button class="choice" data-start="fr"><span class="swatch fr"></span><span><b>Command the French</b><small>' + esc(sc.sides.fr.commander) + '’s I Corps. Hold the ridge until dark.</small></span><span class="arrow">›</span></button>' +
       '<button class="choice" data-start="hs"><span class="swatch hs"></span><span><b>Two players, one phone</b><small>Pass the phone between turns.</small></span><span class="arrow">›</span></button>' +
       '</div>' +
       '<details class="rules"><summary>How to play</summary>' + RULES_HTML() + '</details>' +
@@ -931,17 +1092,28 @@
   }
 
   overlayEl.addEventListener('click', e => {
-    const b = e.target.closest('[data-start],[data-menu]');
+    const b = e.target.closest('[data-start],[data-menu],[data-intro]');
     if (!b) return;
     if (b.dataset.start) {
       const m = b.dataset.start;
       if (m === 'resume') { const s = loadSave(); if (s) { startWith(s); return; } }
       const players = m === 'de' ? { de: 'human', fr: 'ai' } : m === 'fr' ? { de: 'ai', fr: 'human' } : { de: 'human', fr: 'human' };
-      startWith(E.newGame(SC_ID, players));
+      showIntro(players, 0, false);
+      return;
+    }
+    if (b.dataset.intro) {
+      const a = b.dataset.intro, it = G.intro, n = INTRO.length;
+      if (a === 'next') showIntro(it.players, it.page + 1, it.review);
+      else if (a === 'prev') showIntro(it.players, it.page - 1, it.review);
+      else if (a === 'skip') showIntro(it.players, n, it.review);
+      else if (a === 'title') showBriefing();
+      else if (a === 'close') closeOverlay();
+      else if (a === 'go') startWith(E.newGame(SC_ID, it.players));
       return;
     }
     const a = b.dataset.menu;
     if (a === 'close') { closeOverlay(); if (G.handoverPending) { G.handoverPending = false; announceTurn(); } }
+    else if (a === 'intro') showIntro(G.state.players, 0, true);
     else if (a === 'rules') showRules();
     else if (a === 'log') showLog();
     else if (a === 'speed') { G.prefs.fast = !G.prefs.fast; savePrefs(); showMenu(); renderCard(); }
@@ -955,6 +1127,7 @@
     openOverlay('<div class="panel"><p class="eyebrow">Turn ' + G.state.turn + ' · ' + E.clock(G.state) + '</p><h1 class="display small">Field orders</h1>' +
       '<div class="menu-list">' +
       '<button class="btn primary" data-menu="close">Back to the map</button>' +
+      '<button class="btn" data-menu="intro">The situation <span>Introduction and orders</span></button>' +
       '<button class="btn" data-menu="rules">How to play</button>' +
       '<button class="btn" data-menu="log">Battle log <span>' + G.state.log.length + ' entries</span></button>' +
       '<button class="btn" data-menu="speed">Animation speed <span>' + (G.prefs.fast ? 'Fast' : 'Normal') + '</span></button>' +
@@ -991,11 +1164,12 @@
     let line = o.reason === 'collapse' ? 'The ' + sc.sides[o.loser].short + ' have lost 70% of the strength they committed and can no longer hold together.'
       : 'Nightfall. The Germans hold ' + v.de + ' VP of 9; they needed ' + sc.winVP + '.';
     if (human) line += human === o.winner ? ' Your command carried the day.' : o.winner === 'draw' ? ' Neither side can claim the field.' : ' Your command was beaten.';
+    for (const s of ['de', 'fr']) if (st.cmdLost[s]) { const cu = E.commander(st, s); line += ' ' + cu.name + ' fell during the battle.'; }
     openOverlay('<div class="panel"><p class="eyebrow">' + (o.reason === 'collapse' ? 'Turn ' + o.turn + ' · ' + E.clock(st) : 'Nightfall · 18:30') + '</p>' +
       '<h1 class="display small ' + (o.winner === 'draw' ? '' : 'verdict-' + o.winner) + '">' + title + '</h1><p class="lede">' + esc(line) + '</p>' +
       '<div class="tally"><div><small>German losses</small><b>' + (de.committed - de.now) + '</b><small>of ' + de.committed + ' strength committed</small></div>' +
       '<div><small>French losses</small><b>' + (fr.committed - fr.now) + '</b><small>of ' + fr.committed + ' strength committed</small></div></div>' +
-      '<div class="objs">' + sc.objectives.map((ob, k) => '<span class="obj"><i class="' + st.control[k] + '"></i>' + esc(ob.name) + ' <b>' + ob.vp + '</b></span>').join('') + '</div>' +
+      '<div class="objs">' + sc.objectives.map((ob, k) => ob.vp ? '<span class="obj"><i class="' + st.control[k] + '"></i>' + esc(ob.name) + ' <b>' + ob.vp + '</b></span>' : '').join('') + '</div>' +
       '<p class="fine">' + esc(sc.history) + '</p>' +
       '<div class="row"><button class="btn" data-menu="field">View the field</button><button class="btn" data-menu="log">Battle log</button><button class="btn primary" data-menu="new-yes">New battle</button></div></div>');
   }
